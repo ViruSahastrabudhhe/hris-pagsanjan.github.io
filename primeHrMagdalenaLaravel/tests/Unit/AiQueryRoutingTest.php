@@ -1,0 +1,798 @@
+<?php
+
+namespace Tests\Unit;
+
+use App\Models\User;
+use App\Services\AiAccessPolicy;
+use App\Services\ChartDataService;
+use App\Services\ConversationMemoryService;
+use App\Services\DashboardAssistantService;
+use App\Services\DocumentSearchService;
+use App\Services\EmployeeSearchService;
+use App\Services\EmployeeChatbotService;
+use App\Services\HrChatbotAnswerer;
+use App\Services\AiQueryService;
+use App\Services\ReportGeneratorService;
+use App\Services\SafeSqlService;
+use App\Services\WorkflowAssistantService;
+use Illuminate\Support\Facades\Log;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
+
+/**
+ * How the orchestrator treats a refusal.
+ *
+ * SafeSqlService restricts generated SQL to org-wide roles, because a statement
+ * with arbitrary joins cannot be scoped to one employee's own rows after the
+ * fact. That restriction is only worth anything if being refused ends the
+ * request. It previously did not: a blocked result fell through to
+ * HrChatbotAnswerer, which generated and executed SQL with no allow-list and no
+ * AiAccessPolicy scoping — so the denial was itself the trigger for an
+ * unscoped answer.
+ *
+ * These tests pin both halves of the behaviour: a refusal is returned as a
+ * refusal, and a query that merely failed still falls back, so ordinary
+ * conversation is unaffected.
+ */
+class AiQueryRoutingTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The orchestrator audits every turn through the ai_audit channel;
+        // nothing here asserts on the log, it just must not blow up.
+        Log::shouldReceive('channel')->andReturnSelf();
+        Log::shouldReceive('info', 'warning', 'error')->andReturnNull();
+    }
+
+    private function user(array $roles, ?int $employeeId = null): User
+    {
+        $user = new User();
+        $user->roles = $roles;
+        $user->status = 'Active';
+        $user->employee_id = $employeeId;
+
+        return $user;
+    }
+
+    /**
+     * Every collaborator the orchestrator needs, with the two that matter for a
+     * given test supplied by the caller.
+     */
+    private function assistant(
+        SafeSqlService $sql,
+        HrChatbotAnswerer $fallback,
+        ?EmployeeChatbotService $selfService = null,
+    ): AiQueryService {
+        return new AiQueryService(
+            new AiAccessPolicy(),
+            new ConversationMemoryService(),
+            $this->createMock(EmployeeSearchService::class),
+            $this->createMock(DocumentSearchService::class),
+            $this->createMock(DashboardAssistantService::class),
+            $this->createMock(ReportGeneratorService::class),
+            $this->createMock(ChartDataService::class),
+            $this->createMock(WorkflowAssistantService::class),
+            $sql,
+            $fallback,
+            $selfService ?? $this->createMock(EmployeeChatbotService::class),
+        );
+    }
+
+    /**
+     * Classify a question without exercising any capability behind it. Every
+     * collaborator is a mock, so the returned intent is the routing decision
+     * on its own.
+     */
+    private function intentOf(string $question, array $roles = ['employee'], ?int $employeeId = null): string
+    {
+        $assistant = $this->assistant(
+            $this->createMock(SafeSqlService::class),
+            $this->createMock(HrChatbotAnswerer::class),
+        );
+
+        return $assistant->ask($this->user($roles, $employeeId), $question)['intent'];
+    }
+
+    /**
+     * The vulnerability, stated as a test: an employee asks a data question,
+     * SafeSqlService refuses because they lack org-wide access, and the answer
+     * must be that refusal — not a second attempt through an unscoped path.
+     */
+    #[Test]
+    public function a_blocked_query_is_not_rerouted_to_the_general_answerer(): void
+    {
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+
+        // The real service, so the refusal comes from the real policy check.
+        $assistant = $this->assistant(new SafeSqlService(new AiAccessPolicy()), $fallback);
+
+        $result = $assistant->ask(
+            $this->user(['employee'], 5),
+            'list all employees with their salary grade'
+        );
+
+        $this->assertSame('data_query', $result['intent']);
+        $this->assertStringContainsString('limited to HR, admin, and mayor', $result['answer']);
+        $this->assertSame([], $result['data']);
+    }
+
+    /**
+     * The same refusal reaches a user with no linked employee record, who has
+     * no "own" data to fall back to either.
+     */
+    #[Test]
+    public function an_orphaned_account_is_refused_rather_than_rerouted(): void
+    {
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+
+        $assistant = $this->assistant(new SafeSqlService(new AiAccessPolicy()), $fallback);
+
+        $result = $assistant->ask($this->user(['employee'], null), 'list all pending leave applications');
+
+        $this->assertStringContainsString('limited to HR, admin, and mayor', $result['answer']);
+    }
+
+    /**
+     * The counterpart: a query that was allowed but did not work is a failure,
+     * not a permission decision, so it still falls back. Without this the fix
+     * above would have quietly removed ordinary error recovery.
+     */
+    #[Test]
+    public function a_failed_query_still_falls_back(): void
+    {
+        $sql = $this->createMock(SafeSqlService::class);
+        $sql->method('query')->willReturn([
+            'answer' => 'I could not build a working query for that.',
+            'data' => [],
+            'error' => 'Unknown column x in field list',
+        ]);
+
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->once())
+            ->method('answer')
+            ->willReturn('Here is what I know about leave policy instead.');
+
+        $assistant = $this->assistant($sql, $fallback);
+
+        $result = $assistant->ask($this->user(['hr'], 1), 'list all employees with their salary grade');
+
+        $this->assertSame('Here is what I know about leave policy instead.', $result['answer']);
+    }
+
+    /**
+     * The reason step 1's refusal is acceptable: a question about the asker's
+     * own records no longer goes near generated SQL, so an employee is
+     * answered rather than denied.
+     */
+    #[Test]
+    public function questions_about_ones_own_records_route_to_self_service(): void
+    {
+        foreach ([
+            'what is my leave balance?',
+            'show my latest payslip',
+            'how many VL credits do I have left?',
+            'do I have any pending leave',
+            'my attendance this month',
+            'aking payslip',
+            'who am i',
+        ] as $question) {
+            $this->assertSame('self_service', $this->intentOf($question), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * The self-reference has to attach to a personal HR noun. An HR officer
+     * asking about their department means the department, not themselves —
+     * a blanket match on "my" would silently narrow the answer to one row.
+     */
+    #[Test]
+    public function a_possessive_about_something_other_than_own_records_is_not_self_service(): void
+    {
+        $this->assertSame('dashboard', $this->intentOf('how many employees are in my department', ['hr'], 1));
+        $this->assertSame('report', $this->intentOf('generate the payroll report for my department', ['hr'], 1));
+    }
+
+    /**
+     * "How do I check my leave balance" is a how-to, not a lookup of that
+     * balance — so the how-to rule has to be tested ahead of self-service.
+     */
+    #[Test]
+    public function how_to_questions_route_to_the_knowledge_base(): void
+    {
+        foreach ([
+            'how do i file a leave application?',
+            'how to add a training record',
+            'how do I check my leave balance',
+            'paano mag-file ng leave',
+            'pano mag time in',
+            'what is the process for a travel order',
+        ] as $question) {
+            $this->assertSame('how_to', $this->intentOf($question), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * A how-to is answered from curated policy and the knowledge base, never
+     * from generated SQL — `explain()` rather than `answer()`.
+     */
+    #[Test]
+    public function a_how_to_never_reaches_the_sql_answerer(): void
+    {
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+        $fallback->expects($this->once())
+            ->method('explain')
+            ->willReturn('Go to Leave Management > File Leave Application.');
+
+        $assistant = $this->assistant($this->createMock(SafeSqlService::class), $fallback);
+
+        $result = $assistant->ask($this->user(['employee'], 5), 'how do i file a leave application?');
+
+        $this->assertSame('Go to Leave Management > File Leave Application.', $result['answer']);
+    }
+
+    /**
+     * An account with no employee row has no "own" records. It must be told
+     * so, not handed someone else's.
+     */
+    #[Test]
+    public function self_service_for_an_unlinked_account_explains_rather_than_guesses(): void
+    {
+        $selfService = $this->createMock(EmployeeChatbotService::class);
+        $selfService->expects($this->never())->method('assist');
+
+        $assistant = $this->assistant(
+            $this->createMock(SafeSqlService::class),
+            $this->createMock(HrChatbotAnswerer::class),
+            $selfService,
+        );
+
+        $result = $assistant->ask($this->user(['employee'], null), 'what is my leave balance?');
+
+        $this->assertSame('self_service', $result['intent']);
+        $this->assertStringContainsString('not linked to an employee record', $result['answer']);
+    }
+
+    /**
+     * "how many" is a count for the dashboard, not an instruction — the how-to
+     * rule must not swallow it.
+     */
+    #[Test]
+    public function how_many_is_still_a_dashboard_question(): void
+    {
+        $this->assertSame('dashboard', $this->intentOf('how many employees are on leave today', ['hr'], 1));
+    }
+
+    #[Test]
+    public function asking_what_the_assistant_can_do_is_answered_without_a_model_call(): void
+    {
+        foreach ([
+            'what can you do?',
+            'what can i ask you',
+            'who are you',
+            'anong kaya mo',
+            'help',
+        ] as $question) {
+            $this->assertSame('capabilities', $this->intentOf($question), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * Tagalog inserts particles between every part of the phrase, so the fixed
+     * sequence "ano ang pwede" does not survive contact with how the question
+     * is actually typed: "ano LANG BA ang MGA pwede NA itanong sayo".
+     *
+     * This is not a cosmetic misroute. An unrecognised question from an
+     * org-wide caller reaches HrChatbotAnswerer, which runs text-to-SQL — so
+     * "what can I ask you?" was answered with a table of absences and late
+     * deductions, narrated as though that were the answer.
+     */
+    #[Test]
+    public function tagalog_capability_questions_are_not_answered_with_data(): void
+    {
+        foreach ([
+            'ano lang ba ang mga pwede na itanong sayo?',
+            'Ano lang ba ang mga pwede na itanong sayo',
+            'ano ang mga tanong na pwede ko sayo',
+            'ano pa ang pwede kong itanong',
+            'anong pwede kong itanong sayo',
+            'ano ang magagawa mo',
+        ] as $question) {
+            $this->assertSame('capabilities', $this->intentOf($question, ['admin'], 1), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * The counterpart: the widened Tagalog patterns must not swallow questions
+     * that name a real subject. "Anong uri ng leave ang pwede kong i-file" is
+     * about the rulebook and "ilan ang pending" is a count — neither is a
+     * question about the assistant.
+     */
+    #[Test]
+    public function the_tagalog_capability_patterns_do_not_claim_real_questions(): void
+    {
+        $this->assertSame('how_to', $this->intentOf('anong mga uri ng leave ang pwede kong i-file?', ['employee'], 5));
+        $this->assertSame('self_service', $this->intentOf('ano ang mga leave credits na meron ako', ['employee'], 5));
+        $this->assertSame('dashboard', $this->intentOf('ilan ang leave applications na pending', ['hr'], 1));
+    }
+
+    /**
+     * "help me find Juan" is a search. A bare "help" is the only form that
+     * means the capability list.
+     */
+    #[Test]
+    public function help_with_an_object_is_not_a_capability_question(): void
+    {
+        $this->assertNotSame('capabilities', $this->intentOf('help me find Juan dela Cruz', ['hr'], 1));
+    }
+
+    /**
+     * The capability list is built from AiAccessPolicy, so it cannot offer an
+     * employee something their scope would then refuse.
+     */
+    #[Test]
+    public function the_capability_list_matches_the_callers_scope(): void
+    {
+        $assistant = $this->assistant(
+            $this->createMock(SafeSqlService::class),
+            $this->createMock(HrChatbotAnswerer::class),
+        );
+
+        $employee = $assistant->ask($this->user(['employee'], 5), 'what can you do?');
+        $hr = $assistant->ask($this->user(['hr'], 1), 'what can you do?');
+
+        $this->assertStringContainsString('your own records', $employee['answer']);
+        $this->assertStringNotContainsString('Organisation-wide', $employee['answer']);
+        $this->assertNotEmpty($employee['follow_ups']);
+
+        // The list says what is offered; the boundary says what is not. Stated
+        // together, because a list alone invites the assumption that everything
+        // else is offered too.
+        $this->assertStringContainsString('out of scope', $employee['answer']);
+        $this->assertStringContainsString('out of scope', $hr['answer']);
+
+        $this->assertStringContainsString('Organisation-wide', $hr['answer']);
+    }
+
+    /**
+     * Tagalog puts the possessor after the noun and drops "my" entirely, so
+     * "ano ang mga leave credits na meron ako" carried no marker the English
+     * patterns recognised. It was classified as an org-wide data question and
+     * answered with generated SQL — "no rows" — to an employee whose own leave
+     * page was showing 136 days of credits.
+     */
+    #[Test]
+    public function tagalog_self_reference_routes_to_self_service(): void
+    {
+        foreach ([
+            'ano ang mga leave credits na meron ako ?',
+            'ilang VL credits ang natitira sa akin?',
+            'meron pa ba akong leave credits',
+            'ilan ang natitirang sick leave ko',
+        ] as $question) {
+            $this->assertSame('self_service', $this->intentOf($question, ['employee'], 5), $question);
+        }
+    }
+
+    /**
+     * The counterpart: the Tagalog markers must not claim a question that has
+     * no possessor in it. Asserted on the predicate rather than through ask(),
+     * because an unmatched question falls through to the model classifier and
+     * that needs a provider this connection has no table for.
+     */
+    #[Test]
+    public function tagalog_markers_do_not_claim_org_wide_questions(): void
+    {
+        $method = new \ReflectionMethod(AiQueryService::class, 'isSelfReferential');
+        $method->setAccessible(true);
+
+        $assistant = $this->assistant(
+            $this->createMock(SafeSqlService::class),
+            $this->createMock(HrChatbotAnswerer::class),
+        );
+
+        foreach ([
+            'ilan ang empleyado sa bawat department',
+            'sino ang mga absent ngayong buwan',
+            'ilan ang leave applications na pending',
+        ] as $question) {
+            $this->assertFalse($method->invoke($assistant, $question), $question);
+        }
+
+        foreach ([
+            'ano ang mga leave credits na meron ako',
+            'ilang vl credits ang natitira sa akin',
+        ] as $question) {
+            $this->assertTrue($method->invoke($assistant, $question), $question);
+        }
+    }
+
+    /**
+     * Policy questions belong to every role, and must beat the file-noun rule.
+     *
+     * "What leave types can I file?" is one of the chathead's own suggestion
+     * chips. It reads as self-referential ("leave … can I"), which used to
+     * suppress the policy rule and drop the question onto the stored-file rule,
+     * where the verb "file" answered it with a document search.
+     */
+    #[Test]
+    public function policy_questions_beat_the_file_noun_rule(): void
+    {
+        foreach ([
+            'What leave types can I file?',
+            'can I file bereavement leave?',
+            'anong mga uri ng leave ang pwede kong i-file?',
+        ] as $question) {
+            $this->assertSame('how_to', $this->intentOf($question, ['employee'], 5), $question);
+        }
+    }
+
+    /**
+     * The counterpart: a question about the asker's own figures is a
+     * computation over their records, not a quote from the rulebook.
+     */
+    #[Test]
+    public function personal_deduction_questions_stay_self_service(): void
+    {
+        $this->assertSame(
+            'self_service',
+            $this->intentOf('how much leave did my late cost this year?', ['employee'], 5)
+        );
+        $this->assertSame(
+            'how_to',
+            $this->intentOf('how is late deduction calculated?', ['employee'], 5)
+        );
+    }
+
+    /**
+     * A named person plus one of their personnel-record fields.
+     *
+     * These carry no interrogative ("employment status of Jeremy Pogi" is a
+     * noun phrase), no transactional noun, and no "who is", so every
+     * deterministic rule declined them and they fell through to the model
+     * classifier. That branch is the only one that stops working when the
+     * provider does — so during a 401 the commonest HR lookup in the system
+     * answered with a generic apology instead of the record.
+     */
+    #[Test]
+    public function a_named_person_plus_a_record_field_is_an_employee_search(): void
+    {
+        foreach ([
+            'Employment Status of Jeremy Pogi',
+            'Department of Ana Ramos',
+            "what is Juan Dela Cruz's position",
+            'salary grade of Pedro Santos',
+            'contact number of Rosa Bautista',
+        ] as $question) {
+            $this->assertSame('employee_search', $this->intentOf($question, ['hr'], 1), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * The counterpart: the attribute and the name are both required. An
+     * attribute with nobody named is an org-wide question, and a name attached
+     * to a transactional noun is about those records rather than the personnel
+     * file — EmployeeSearchService reads only the employees cluster and cannot
+     * total a leave credit.
+     */
+    #[Test]
+    public function the_record_field_rule_needs_both_halves(): void
+    {
+        $this->assertNotSame('employee_search', $this->intentOf('leave balance of Jeremy Pogi', ['hr'], 1));
+        $this->assertNotSame('employee_search', $this->intentOf('how many employees are in each department', ['hr'], 1));
+    }
+
+    /**
+     * Questions about the establishment itself — which posts an office holds,
+     * what a post pays — must reach a capability that reads `designations`.
+     *
+     * No rule claimed them, so they fell to the model classifier, which called
+     * "ano ano ang mga job designation sa accounting office" a how_to and sent
+     * it to the knowledge base. There the model answered "Accountant,
+     * Accounting Clerk, Bookkeeper, Auditor, Chief Accountant" — five titles,
+     * none of which exist in this municipality's plantilla, for an office whose
+     * real posts are Mun. Accountant, Bookkeeper III, Acctg. Clerk II and seven
+     * others carrying the monthly rates the question was really after.
+     */
+    #[Test]
+    public function questions_about_posts_and_their_pay_reach_the_data_capability(): void
+    {
+        foreach ([
+            'ano ano ang mga job designation sa accounting office?',
+            'what designations are in the accounting office',
+            'ano ang mga posisyon sa treasury office',
+            'magkano ang sinasahod ng isang accounting clerk?',
+            'how much does a bookkeeper earn',
+        ] as $question) {
+            $this->assertSame('data_query', $this->intentOf($question, ['admin'], 1), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * The counterpart: "magkano ang sahod ko" is the asker's own payslip, and
+     * the establishment rule sits after self-service precisely so the salary
+     * form cannot capture it.
+     */
+    #[Test]
+    public function ones_own_pay_is_not_an_establishment_question(): void
+    {
+        $this->assertSame('self_service', $this->intentOf('magkano ang sahod ko', ['employee'], 5));
+        $this->assertSame('self_service', $this->intentOf('how much is my salary', ['employee'], 5));
+        $this->assertSame('dashboard', $this->intentOf('how many employees are in my department', ['hr'], 1));
+    }
+
+    /**
+     * A travel order can be a group trip, and the other travellers live in
+     * `travel_order_companions`. A companion question names a person, which
+     * sent it to employee_search — a capability that reads only the employees
+     * cluster and cannot see a travel order at all, so it answered with a
+     * roster of everybody.
+     */
+    #[Test]
+    public function travel_companion_questions_reach_the_travel_data(): void
+    {
+        foreach ([
+            'sino ang kasama sa travel order ni Juan',
+            'who is travelling with Jeremy next week',
+            'who are the companions on that travel order',
+            'sinong sasama kay Ana sa byahe',
+        ] as $question) {
+            $this->assertSame('data_query', $this->intentOf($question, ['hr'], 1), "misrouted: {$question}");
+        }
+    }
+
+    /**
+     * The catch-all is the smart path, not the giving-up path.
+     *
+     * The deterministic rules are deliberately certain, so `general` is not a
+     * bucket of nonsense — it is the bucket of real HR questions nobody has
+     * written a rule for yet. A caller permitted to run generated SQL should
+     * therefore have the question put to the database, rather than answered
+     * from the model's general knowledge of how an LGU usually works.
+     *
+     * The probe used to be "the weather is nice today", which is now refused as
+     * out of scope (see the boundary tests below) — so the catch-all is proven
+     * with a question that is in scope and still claimed by no rule.
+     */
+    #[Test]
+    public function an_unclassified_question_is_put_to_the_database(): void
+    {
+        $sql = $this->createMock(SafeSqlService::class);
+        $sql->expects($this->once())
+            ->method('query')
+            ->willReturn(['answer' => 'Answered from the records.', 'data' => [['x' => 1]]]);
+
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+
+        $assistant = $this->assistant($sql, $fallback);
+
+        $result = $assistant->ask($this->user(['hr'], 1), 'tell me about the municipality');
+
+        $this->assertSame('general', $result['intent']);
+        $this->assertSame('Answered from the records.', $result['answer']);
+    }
+
+    /**
+     * Conversation is not a query. A greeting and the curated policy shortcuts
+     * are answered without a model call and must never become a text-to-SQL
+     * attempt — one has nothing to query, the other is already exact.
+     */
+    #[Test]
+    public function a_greeting_never_becomes_a_generated_query(): void
+    {
+        $sql = $this->createMock(SafeSqlService::class);
+        $sql->expects($this->never())->method('query');
+
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->method('shortcutAnswer')->willReturn('Hello! I am your HRIS Assistant.');
+
+        $assistant = $this->assistant($sql, $fallback);
+
+        $result = $assistant->ask($this->user(['hr'], 1), 'hello');
+
+        $this->assertSame('Hello! I am your HRIS Assistant.', $result['answer']);
+    }
+
+    /**
+     * The refusal rule holds on the catch-all too. Widening `general` into a
+     * query path would be worthless if being blocked there fell through to the
+     * unscoped answerer — that is the original vulnerability, reintroduced at a
+     * different door.
+     */
+    #[Test]
+    public function a_blocked_general_question_is_not_rerouted(): void
+    {
+        $sql = $this->createMock(SafeSqlService::class);
+        $sql->method('query')->willReturn([
+            'answer' => 'Generated SQL is limited to HR, admin, and mayor accounts.',
+            'blocked' => true,
+            'data' => [],
+        ]);
+
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+        $fallback->expects($this->never())->method('explain');
+
+        $assistant = $this->assistant($sql, $fallback);
+
+        $result = $assistant->ask($this->user(['hr'], 1), 'tell me about the municipality');
+
+        $this->assertStringContainsString('limited to HR', $result['answer']);
+    }
+
+    /**
+     * A statement that errored is not an answer, and must not produce a second
+     * generated statement either — it falls through to `explain()`, which
+     * cannot run SQL, rather than to `answer()`, which can.
+     */
+    #[Test]
+    public function a_failed_general_query_falls_through_without_a_second_attempt(): void
+    {
+        $sql = $this->createMock(SafeSqlService::class);
+        $sql->method('query')->willReturn([
+            'answer' => 'I could not build a working query.',
+            'data' => [],
+            'error' => 'Unknown column x',
+        ]);
+
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+        $fallback->expects($this->once())
+            ->method('explain')
+            ->willReturn('Here is what the handbook says instead.');
+
+        $assistant = $this->assistant($sql, $fallback);
+
+        $result = $assistant->ask($this->user(['hr'], 1), 'tell me about the municipality');
+
+        $this->assertSame('Here is what the handbook says instead.', $result['answer']);
+    }
+
+    /**
+     * An out-of-scope question ends the request before anything can narrate it.
+     *
+     * This is the reported vulnerability, stated as a test: "how to write a for
+     * loop in python" was classified `how_to` on the words "how to", handed to
+     * HrChatbotAnswerer, and answered with a working Python loop. Guarding only
+     * the free-text answerer would move the hole rather than close it — a
+     * "generate a report in python" is claimed by the report rule, and a "plot a
+     * sine wave in python" by the chart rule — so the refusal happens on the
+     * scope decision itself, ahead of every capability.
+     */
+    #[Test]
+    public function an_out_of_scope_question_is_refused_before_any_capability_runs(): void
+    {
+        $sql = $this->createMock(SafeSqlService::class);
+        $sql->expects($this->never())->method('query');
+
+        $fallback = $this->createMock(HrChatbotAnswerer::class);
+        $fallback->expects($this->never())->method('answer');
+        $fallback->expects($this->never())->method('explain');
+
+        $assistant = $this->assistant($sql, $fallback);
+
+        $result = $assistant->ask($this->user(['admin'], 1), 'how to write a for loop in python');
+
+        $this->assertSame('out_of_scope', $result['intent']);
+        $this->assertStringContainsString('HRIS', $result['answer']);
+        $this->assertStringNotContainsString('for item in', $result['answer']);
+        $this->assertNotEmpty($result['follow_ups']);
+    }
+
+    /**
+     * The boundary is not a keyword block: a question that names an off-topic
+     * subject *and* an HR subject is an HR question. "which of our employees
+     * know python" is a training/skills lookup, and refusing it would be the
+     * false positive that makes a scope guard worse than none.
+     */
+    #[Test]
+    public function an_hr_question_that_mentions_a_code_word_is_not_refused(): void
+    {
+        foreach ([
+            'which of our employees know python',
+            'what is the code of conduct',
+            'show me the documents of Juan',
+            'how do I print my payslip',
+            'how many employees are on leave today',
+            'what are the requirements for a business permit?',
+            'paano kumuha ng cedula?',
+        ] as $question) {
+            $this->assertNotSame(
+                'out_of_scope',
+                $this->intentOf($question, ['hr'], 1),
+                "wrongly refused: {$question}"
+            );
+        }
+    }
+
+    /**
+     * A file search renders each row as a clickable table, so attaching a table
+     * of the same rows repeats every file name, type, size, and date in a
+     * wider, less readable form directly beneath the cards.
+     */
+    #[Test]
+    public function a_fully_carded_file_search_gets_no_duplicate_table(): void
+    {
+        $result = $this->fileSearchResult(rows: 2, files: 2);
+
+        $this->assertArrayNotHasKey('table', $result);
+    }
+
+    /**
+     * The cards are not always the whole story: buildFileAttachments() drops a
+     * row whose file is missing from storage and caps the rest at 12. Those
+     * rows appear nowhere else, so suppressing the table would lose them.
+     */
+    #[Test]
+    public function a_partially_carded_file_search_keeps_its_table(): void
+    {
+        $result = $this->fileSearchResult(rows: 3, files: 2);
+
+        $this->assertArrayHasKey('table', $result);
+        $this->assertSame(3, $result['table']['row_count']);
+    }
+
+    /**
+     * An answer carrying rows but no cards at all — generated SQL, a report —
+     * is unaffected by the file-card rule.
+     */
+    #[Test]
+    public function a_row_bearing_answer_without_files_still_gets_a_table(): void
+    {
+        $result = $this->fileSearchResult(rows: 2, files: null);
+
+        $this->assertArrayHasKey('table', $result);
+    }
+
+    /**
+     * Drive the orchestrator through document_search with a stubbed service so
+     * the row/card counts are exactly what the assertion needs.
+     *
+     * @return array<string, mixed>
+     */
+    private function fileSearchResult(int $rows, ?int $files): array
+    {
+        $payload = [
+            'answer' => 'Found some files.',
+            'data' => array_map(
+                fn (int $i) => ['id' => $i, 'file_name' => "scan-{$i}.png", 'document_type' => 'GSIS ID scan'],
+                range(1, $rows)
+            ),
+        ];
+
+        if ($files !== null) {
+            $payload['files'] = array_map(
+                fn (int $i) => ['id' => "government_ids-{$i}", 'name' => "scan-{$i}.png"],
+                range(1, $files)
+            );
+        }
+
+        $documents = $this->createMock(DocumentSearchService::class);
+        $documents->method('search')->willReturn($payload);
+
+        $assistant = new AiQueryService(
+            new AiAccessPolicy(),
+            new ConversationMemoryService(),
+            $this->createMock(EmployeeSearchService::class),
+            $documents,
+            $this->createMock(DashboardAssistantService::class),
+            $this->createMock(ReportGeneratorService::class),
+            $this->createMock(ChartDataService::class),
+            $this->createMock(WorkflowAssistantService::class),
+            $this->createMock(SafeSqlService::class),
+            $this->createMock(HrChatbotAnswerer::class),
+            $this->createMock(EmployeeChatbotService::class),
+        );
+
+        $result = $assistant->ask($this->user(['hr'], 1), 'show me my gsis id scan');
+
+        $this->assertSame('document_search', $result['intent']);
+
+        return $result;
+    }
+}

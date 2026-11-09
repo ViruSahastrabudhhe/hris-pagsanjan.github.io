@@ -1,0 +1,560 @@
+/* Styles for travelOrder.blade.php and its partials/modals */
+
+/* Stat cards */
+.to-stats-grid { margin-bottom: 20px; }
+.to-icon-purple { background: var(--gp-bg-tint-2); }
+.to-icon-yellow { background: #fbf6e3; }
+.to-icon-green { background: #e8f9ef; }
+.to-icon-red { background: #fdf0ef; }
+.to-dot-purple { background: #0b044d; }
+.to-dot-yellow { background: #c9a227; }
+.to-dot-green { background: #15803d; }
+.to-dot-red { background: #8e1e18; }
+
+/* Table sections */
+.to-table-section {
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(var(--theme-shadow-rgb),.04), 0 1px 3px rgba(var(--theme-shadow-rgb),.03);
+    overflow: hidden;
+}
+.to-hidden { display: none; }
+
+.to-table-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--theme-neutral-300);
+    align-items: center;
+}
+.to-header-purple { background: linear-gradient(135deg, var(--gp-bg-tint-2) 0%, #fff 100%); }
+.to-header-green { background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%); }
+.to-header-red { background: linear-gradient(135deg, #fdf0ef 0%, #fff 100%); }
+.to-table-title { color: var(--theme-neutral-950); font-size: 15px; font-weight: 800; margin: 0 0 4px; }
+.to-table-sub { color: var(--theme-neutral-700); font-size: 12px; margin: 0; }
+
+/* Table cells */
+.to-th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--theme-neutral-50);
+    color: var(--theme-neutral-700);
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--theme-neutral-200);
+}
+/* `.payroll-table thead th { text-align: left }` in admin.css is (0,1,2) and
+   beats a lone class (0,1,0) whatever the load order, so these header
+   alignments were silently ignored and every centred column header rendered
+   left above centred cells. The qualified selector is (0,2,2) and wins; the
+   bare one is kept for the same class used on a <td>. */
+.to-th-center,
+.payroll-table thead th.to-th-center { text-align: center; }
+.to-th-wide { min-width: 200px; }
+
+.to-row { transition: all 0.15s ease; }
+.to-row:hover { background: var(--theme-neutral-50); }
+
+.to-td { padding: 14px 16px; border-bottom: 1px solid var(--theme-neutral-200); }
+.to-td-center { text-align: center; }
+.to-td-muted { font-size: 13px; color: var(--theme-neutral-700); }
+.to-td-strong { font-size: 13px; color: var(--theme-neutral-950); font-weight: 600; }
+.to-td-accent { font-size: 13px; color: var(--gp-pri); font-weight: 600; }
+.to-td-green { font-size: 13px; color: #15803d; font-weight: 600; }
+.to-td-red { font-size: 13px; color: #8e1e18; font-weight: 600; }
+
+.to-emp-cell { display: flex; align-items: center; gap: 12px; }
+.to-emp-info { min-width: 0; }
+.to-emp-name {
+    margin: 0 0 2px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme-neutral-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.to-emp-id { margin: 0; font-size: 11px; color: var(--theme-neutral-700); font-weight: 500; }
+
+.to-badge-duration {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.to-badge-purple { background: var(--gp-bg-tint-2); color: var(--gp-pri); }
+.to-badge-green { background: #f0fdf4; color: #15803d; }
+
+/* Row action ellipsis menu */
+.to-actions-wrap { position: relative; display: flex; justify-content: center; }
+.to-ellipsis-btn {
+    background: none;
+    border: none;
+    color: var(--gp-text-soft);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.to-ellipsis-btn:hover { background: var(--theme-neutral-100); color: var(--gp-pri); }
+
+.to-action-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: #fff;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(var(--theme-shadow-rgb), 0.15);
+    z-index: 100;
+    min-width: 160px;
+    margin-top: 6px;
+    overflow: hidden;
+}
+.to-menu-btn {
+    width: 100%;
+    padding: 11px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.to-menu-view { color: var(--gp-pri); }
+.to-menu-view:hover { background: var(--gp-bg-tint-2); }
+.to-menu-approve { color: #22c55e; border-top: 1px solid var(--theme-neutral-100); }
+.to-menu-approve:hover { background: #f0fdf4; }
+.to-menu-disapprove { color: #ef4444; border-top: 1px solid var(--theme-neutral-100); }
+.to-menu-disapprove:hover { background: #fef2f2; }
+.to-menu-icon { display: inline; margin-right: 8px; vertical-align: middle; }
+
+/* Simple "View" button (approved/disapproved tabs) */
+.to-btn-view {
+    padding: 6px 14px;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--gp-pri);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.to-btn-view:hover { background: var(--gp-bg-tint-2); border-color: #c4b5fd; }
+
+/* Empty states */
+.to-empty-td { text-align: center; padding: 60px 20px; border-bottom: none; }
+.to-empty-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--theme-neutral-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.to-empty-title { margin: 0 0 8px; font-size: 15px; color: var(--theme-neutral-700); font-weight: 600; }
+.to-empty-sub { margin: 0; font-size: 13px; color: var(--theme-neutral-600); }
+
+/* Table footer / pagination */
+.to-footer-inner { display: flex; align-items: center; gap: 12px; }
+.to-footer-text { margin: 0; font-size: 12px; color: var(--theme-neutral-700); font-weight: 500; }
+.to-footer-strong { color: var(--gp-pri); font-weight: 700; }
+.to-rows-select {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 12px;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--gp-text-mid);
+    font-weight: 600;
+    cursor: pointer;
+}
+.to-pagination { display: flex; gap: 4px; }
+.to-page-btn {
+    padding: 6px 10px;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--gp-text-mid);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+.to-page-btn-num { padding: 6px 12px; }
+.to-page-btn-disabled { opacity: 0.5; cursor: not-allowed; }
+.to-page-btn-active {
+    padding: 6px 12px;
+    border: 1px solid var(--gp-pri);
+    border-radius: 6px;
+    background: var(--gp-pri);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* View Travel Order modal */
+.to-status-wrap { text-align: center; margin-bottom: 20px; }
+.to-section-label-mt { margin-top: 16px; }
+.to-purpose-text {
+    font-size: 13px;
+    color: var(--theme-neutral-800);
+    line-height: 1.6;
+    margin: 8px 0;
+    padding: 12px;
+    background: var(--theme-neutral-50);
+    border-radius: 6px;
+}
+.to-companions-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.to-history-list-mt { margin-top: 8px; }
+.to-remarks-section-mt { margin-top: 12px; }
+.to-remarks-text {
+    font-size: 13px;
+    color: #991b1b;
+    line-height: 1.6;
+    margin: 8px 0;
+    padding: 12px;
+    background: #fee2e2;
+    border-radius: 6px;
+    border-left: 3px solid #dc2626;
+}
+.to-attachment-section-mt { margin-top: 16px; }
+.to-attachment-link-mt { margin-top: 8px; }
+.to-badge-cancelled { background: #f3f4f6; color: var(--theme-neutral-700); }
+
+/* JS-rendered companion / history rows */
+.to-companion-note { margin: 2px 0 0; font-size: 11px; color: var(--theme-neutral-600); font-style: italic; }
+.to-companion-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--theme-neutral-50); border-radius: 8px; }
+.to-companion-info { flex: 1; min-width: 0; }
+.to-companion-name { margin: 0; font-size: 13px; font-weight: 600; color: var(--gp-pri); }
+.to-companion-id { margin: 0; font-size: 11px; color: var(--theme-neutral-600); }
+.to-companion-avatar-img { border-radius: 50%; object-fit: cover; border: 1px solid var(--theme-neutral-300); flex-shrink: 0; }
+.to-companion-avatar-fallback {
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gp-pri), #4338ca);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Travel order decision — approve / disapprove confirmation
+   (#travelDecisionModal).
+
+   One modal answers both questions. Everything that differs between them is a
+   token redefined under `.is-approve` / `.is-disapprove`, so the two states
+   cannot drift apart in spacing or structure — only in colour and wording.
+   An approval that looks like a refusal is worse than either.
+   --------------------------------------------------------------------------- */
+#travelDecisionModal {
+    --tdm-accent: var(--theme-success);
+    --tdm-accent-subtle: var(--theme-success-subtle);
+    --tdm-accent-border: var(--theme-success-border);
+    --tdm-accent-emphasis: var(--theme-success-emphasis);
+}
+#travelDecisionModal.is-disapprove {
+    --tdm-accent: var(--theme-danger);
+    --tdm-accent-subtle: var(--theme-danger-subtle);
+    --tdm-accent-border: var(--theme-danger-border);
+    --tdm-accent-emphasis: var(--theme-danger-emphasis);
+}
+
+#travelDecisionModal .modal-box {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+/* Header: the question, centred, with the decision's own glyph above it. The
+   shared .modal-header is not used — this modal leads with an icon and has no
+   close button, because a decision should be answered, not dismissed by a
+   stray click on an X. (Escape and the overlay still close it.) */
+#travelDecisionModal .tdm-head {
+    padding: 26px 26px 18px;
+    text-align: center;
+    border-bottom: 1px solid var(--theme-neutral-200);
+}
+#travelDecisionModal .tdm-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tdm-accent-subtle);
+    border: 1px solid var(--tdm-accent-border);
+    color: var(--tdm-accent-emphasis);
+}
+#travelDecisionModal .tdm-eyebrow {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: var(--tdm-accent-emphasis);
+    margin-bottom: 6px;
+}
+#travelDecisionModal .tdm-title {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.35;
+    color: var(--gp-pri);
+}
+#travelDecisionModal .tdm-lede {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--theme-neutral-700);
+}
+
+#travelDecisionModal .tdm-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px 26px 20px;
+}
+
+/* Whose order this is */
+#travelDecisionModal .tdm-filer {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 14px;
+}
+#travelDecisionModal .tdm-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--gp-pri), var(--theme-accent));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+}
+#travelDecisionModal .tdm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+#travelDecisionModal .tdm-filer-text { min-width: 0; text-align: left; flex: 1; }
+#travelDecisionModal .tdm-filer-name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gp-pri);
+}
+#travelDecisionModal .tdm-filer-role {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    color: var(--theme-neutral-600);
+}
+/* The order number is the reference the approver quotes afterwards, so it is
+   kept legible rather than folded into the meta line. */
+#travelDecisionModal .tdm-order-no {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--theme-neutral-100);
+    border: 1px solid var(--theme-neutral-300);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    color: var(--theme-neutral-700);
+}
+
+/* What is being decided */
+#travelDecisionModal .tdm-trip {
+    border: 1px solid var(--theme-neutral-200);
+    border-radius: 12px;
+    background: var(--theme-neutral-50);
+    overflow: hidden;
+}
+#travelDecisionModal .tdm-trip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--theme-neutral-200);
+}
+#travelDecisionModal .tdm-trip-row:last-child { border-bottom: none; }
+#travelDecisionModal .tdm-trip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--theme-neutral-600);
+}
+#travelDecisionModal .tdm-trip-value {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--gp-pri);
+    text-align: right;
+    min-width: 0;
+}
+/* The dates are what an approval writes onto the DTR; they get the accent so
+   the eye lands there first, before the destination or the head-count. */
+#travelDecisionModal .tdm-trip-row:first-child .tdm-trip-value { color: var(--tdm-accent-emphasis); }
+
+/* Purpose is free text of any length, so it stacks and wraps instead of
+   fighting the label for one line. */
+#travelDecisionModal .tdm-trip-purpose {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+}
+#travelDecisionModal .tdm-trip-purpose-text {
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--theme-neutral-800);
+    word-break: break-word;
+}
+
+/* Disapprove only: the reason */
+#travelDecisionModal .tdm-note { margin-top: 16px; }
+#travelDecisionModal .tdm-note[hidden] { display: none; }
+#travelDecisionModal .tdm-note-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gp-pri);
+}
+#travelDecisionModal .tdm-required {
+    margin-left: 5px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--theme-danger-subtle);
+    border: 1px solid var(--theme-danger-border);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    color: var(--theme-danger-emphasis);
+}
+#travelDecisionModal .tdm-note-input {
+    width: 100%;
+    padding: 11px 12px;
+    border: 2px solid var(--theme-neutral-300);
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.55;
+    resize: vertical;
+    transition: border-color .15s, box-shadow .15s;
+}
+/* The focus ring is deliberately NOT the accent. This field only appears on the
+   disapproval, where the accent is danger red — and a red border around a
+   textarea reads as "you typed something invalid", not as "this is the refusal
+   dialog". It matches the page's other inputs instead. */
+#travelDecisionModal .tdm-note-input:focus {
+    outline: none;
+    border-color: var(--gp-pri);
+    box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb), .10);
+}
+#travelDecisionModal .tdm-note-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--theme-neutral-600);
+}
+#travelDecisionModal .tdm-note-foot .is-full { color: var(--theme-danger); font-weight: 700; }
+
+/* What happens next. Stated before the button, not after it. */
+#travelDecisionModal .tdm-consequence {
+    margin: 16px 0 0;
+    padding: 11px 13px;
+    border-left: 3px solid var(--tdm-accent-border);
+    border-radius: 0 8px 8px 0;
+    background: var(--tdm-accent-subtle);
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--tdm-accent-emphasis);
+}
+
+#travelDecisionModal .tdm-footer { flex-shrink: 0; }
+#travelDecisionModal .tdm-footer .modal-btn-primary {
+    background: var(--tdm-accent);
+    box-shadow: none;
+}
+#travelDecisionModal .tdm-footer .modal-btn-primary:hover:not(:disabled) {
+    background: var(--tdm-accent-emphasis);
+    transform: translateY(-1px);
+}
+/* Disabled until a reason is typed — the controller requires one, and a 422
+   has nowhere to render on this page. */
+#travelDecisionModal .tdm-footer .modal-btn-primary:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none;
+}
+
+@media (max-width: 640px) {
+    #travelDecisionModal .modal-box { max-height: 94vh; }
+    #travelDecisionModal .tdm-head { padding: 22px 18px 16px; }
+    #travelDecisionModal .tdm-body { padding: 16px 18px; }
+    #travelDecisionModal .tdm-title { font-size: 16.5px; }
+    /* Stacking keeps a long destination or date range from squeezing its label
+       down to two characters. */
+    #travelDecisionModal .tdm-trip-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    #travelDecisionModal .tdm-trip-value { text-align: left; }
+    #travelDecisionModal .tdm-filer { flex-wrap: wrap; }
+    #travelDecisionModal .tdm-footer { flex-wrap: wrap; }
+    #travelDecisionModal .tdm-footer .modal-btn-ghost,
+    #travelDecisionModal .tdm-footer .modal-btn-primary {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+.to-history-row { display: flex; gap: 10px; padding: 6px 0; }
+.to-history-rail { display: flex; flex-direction: column; align-items: center; }
+.to-history-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.to-history-line { flex: 1; width: 2px; background: var(--theme-neutral-300); }
+.to-history-body { flex: 1; padding-bottom: 6px; }
+.to-history-label { margin: 0; font-size: 12px; font-weight: 700; color: var(--gp-pri); }
+.to-history-when { font-weight: 400; color: var(--theme-neutral-600); font-size: 11px; }
+.to-history-remarks { margin: 2px 0 0; font-size: 12px; color: var(--theme-neutral-700); line-height: 1.5; }
+
+/* ---------------------------------------------------------------------------
+   Printable Travel Order preview (#travelOrderFormModal).
+
+   Same shell as the Pass Slip's form modal: the sheet is an 8.5 x 13 in page
+   rendered by the server into an iframe, so the body is flush and carries the
+   page's own grey surround rather than a card padding the sheet would sit
+   inside twice.
+   ------------------------------------------------------------------------- */
+.to-modal-box-wide { max-width: 920px; width: 95vw; }
+.to-modal-body-flush { padding: 0; background: #e8e8f0; }
+.to-modal-iframe { width: 100%; height: 65vh; border: none; display: block; background: #fff; }
+.to-modal-footer-actions { display: flex; gap: 8px; margin-left: auto; }
+.to-btn-print { background: #6366f1; }
+.to-btn-download { background: #10b981; }

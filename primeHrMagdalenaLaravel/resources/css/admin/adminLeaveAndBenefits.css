@@ -1,0 +1,1120 @@
+/* Styles for adminLeaveAndBenefits.blade.php */
+
+.seg-tabs {
+    display: inline-flex;
+    gap: 4px;
+    padding: 5px;
+    background: var(--gp-bg-tint-2);
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 14px;
+    margin-bottom: 20px;
+}
+.tab-btn {
+    background: transparent; border: none; cursor: pointer;
+    padding: 9px 20px; font-family: 'Poppins', sans-serif;
+    font-size: 13.5px; font-weight: 600;
+    color: var(--gp-text-mid);
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+.tab-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--gp-pri-2), var(--gp-pri));
+    box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb),.25);
+}
+.tab-btn:hover:not(.active) { color: var(--gp-pri); }
+.badge-emptype {
+    font-size: 11px; color: var(--gp-pri); background: var(--gp-bg-tint-2);
+    padding: 3px 10px; border-radius: 20px; font-weight: 600;
+    border: 1px solid var(--theme-neutral-300);
+}
+.btn-edit {
+    padding: 6px 16px; background: var(--gp-bg-tint); color: var(--gp-pri);
+    border: 1px solid var(--gp-border); border-radius: 9px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+}
+.btn-edit:hover { background: var(--gp-border); }
+.btn-approve {
+    padding: 6px 16px; background: #e9f9ef; color: var(--gp-good);
+    border: 1px solid #c8f0d8; border-radius: 9px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+}
+.btn-approve:hover { background: #dcf3e5; }
+.btn-reject {
+    padding: 6px 16px; background: #fdedec; color: var(--gp-bad);
+    border: 1px solid #f7d4d1; border-radius: 9px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+}
+.btn-reject:hover { background: #fbdedb; }
+.btn-edit:active, .btn-approve:active, .btn-reject:active { transform: scale(.96); }
+.row-actions { display: flex; gap: 8px; justify-content: center; }
+.table-footer {
+    padding: 16px 24px; border-top: 1px solid var(--gp-bg-tint-2);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.table-footer p { font-size: 13px; color: var(--gp-text-mid); }
+.pagination { display: flex; gap: 6px; }
+.page-btn {
+    width: 32px; height: 32px; border: 1px solid var(--gp-border);
+    border-radius: 9px; background: #fff; color: var(--gp-text-mid);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none;
+}
+.page-btn.active { background: var(--gp-pri); color: #fff; border-color: var(--gp-pri); }
+.page-btn:hover:not(:disabled) { background: var(--gp-bg-tint); }
+.page-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+.page-btn:active:not(:disabled) { transform: scale(.93); }
+.deduction {
+    font-size: 13px; color: var(--gp-bad); font-weight: 600;
+}
+.btn-manage-types {
+    padding: 8px 16px; background: var(--gp-bg-tint); color: var(--gp-pri);
+    border: 1px solid var(--gp-border); border-radius: 9px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+    display: flex; align-items: center; gap: 6px;
+}
+.btn-manage-types:hover { background: var(--gp-border); }
+.btn-manage-types:active { transform: scale(.97); }
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(var(--theme-primary-rgb), 0.42);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+    backdrop-filter: blur(8px) saturate(150%);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.modal-overlay.active {
+    display: flex !important;
+}
+.modal-container {
+    background: #fff; border-radius: 18px; width: 90%; max-width: 700px;
+    max-height: 85vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 50px rgba(var(--theme-shadow-rgb),.16), 0 2px 10px rgba(var(--theme-shadow-rgb),.05);
+}
+.modal-header {
+    padding: 24px; border-bottom: 1px solid var(--gp-bg-tint-2);
+    display: flex; justify-content: space-between; align-items: flex-start;
+}
+.modal-title {
+    font-size: 18px; font-weight: 700; color: var(--gp-pri); margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+.modal-subtitle {
+    font-size: 12.5px; color: var(--gp-text-mid); margin: 4px 0 0 0;
+    font-family: 'Poppins', sans-serif;
+}
+.modal-close {
+    background: var(--gp-bg-tint); border: 1px solid var(--gp-border); border-radius: 9px;
+    width: 32px; height: 32px; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+}
+.modal-close:hover { background: var(--gp-border); }
+.modal-close:active { transform: scale(.9); }
+.modal-body {
+    padding: 24px; overflow-y: auto; flex: 1; background: #fafaf9;
+}
+.btn-add-leave-type {
+    width: 100%; padding: 12px; background: var(--gp-pri); color: #fff;
+    border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
+    font-family: 'Poppins', sans-serif; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease; margin-bottom: 20px;
+}
+.btn-add-leave-type:hover { background: var(--gp-pri-2); }
+.btn-add-leave-type:active { transform: scale(.98); }
+.leave-types-list {
+    display: flex; flex-direction: column; gap: 14px;
+}
+.leave-type-item {
+    background: var(--gp-bg-tint); border: 1px solid var(--gp-border); border-radius: 12px;
+    padding: 16px; display: flex; align-items: flex-start; gap: 16px;
+    transition: border-color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1);
+    flex-wrap: wrap;
+}
+.leave-type-item:hover { border-color: #d0cfe8; background: #fafaf9; }
+.leave-type-info { flex: 1; min-width: 200px; }
+.leave-type-name {
+    font-size: 14px; font-weight: 600; color: var(--gp-pri); margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+.leave-type-desc {
+    font-size: 12px; color: var(--gp-text-mid); margin: 4px 0 0 0;
+    font-family: 'Poppins', sans-serif;
+}
+.leave-type-meta {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px;
+}
+.leave-type-days {
+    font-size: 12px; font-weight: 600; color: var(--gp-pri);
+    background: #fff; padding: 5px 12px; border-radius: 9px;
+    border: 1px solid var(--gp-border);
+}
+.badge-active {
+    font-size: 11px; font-weight: 600; color: var(--gp-good);
+    background: #e9f9ef; padding: 5px 12px; border-radius: 999px;
+    border: none;
+}
+.leave-type-actions {
+    display: flex; gap: 8px; align-self: center;
+}
+.btn-icon-edit, .btn-icon-delete {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease; border: none;
+    flex-shrink: 0;
+}
+.btn-icon-edit {
+    background: var(--gp-bg-tint-2); color: var(--gp-pri);
+}
+.btn-icon-edit:hover { background: var(--gp-border); }
+.btn-icon-delete {
+    background: #fdedec; color: var(--gp-bad);
+}
+.btn-icon-delete:hover { background: #fbdedb; }
+.btn-icon-edit:active, .btn-icon-delete:active { transform: scale(.93); }
+.form-group {
+    margin-bottom: 16px;
+}
+.form-label {
+    display: block; font-size: 12.5px; font-weight: 600;
+    color: var(--gp-pri); margin-bottom: 6px;
+    font-family: 'Poppins', sans-serif;
+}
+.form-input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--gp-border);
+    border-radius: 9px; font-size: 13px; color: var(--gp-pri);
+    font-family: 'Poppins', sans-serif; transition: border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1);
+}
+.form-input:focus {
+    outline: none; border-color: var(--gp-pri); box-shadow: 0 0 0 4px rgba(var(--theme-primary-rgb),.08);
+}
+.form-actions {
+    display: flex; gap: 10px; margin-top: 24px;
+}
+.btn-cancel {
+    flex: 1; padding: 10px; background: var(--gp-bg-tint); color: var(--gp-pri);
+    border: 1px solid var(--gp-border); border-radius: 9px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+}
+.btn-cancel:hover { background: var(--gp-border); }
+.btn-submit {
+    flex: 1; padding: 10px; background: var(--gp-pri); color: #fff;
+    border: none; border-radius: 9px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: 'Poppins', sans-serif; transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+}
+.btn-submit:hover { background: var(--gp-pri-2); }
+.btn-cancel:active, .btn-submit:active { transform: scale(.98); }
+.leave-code-badge {
+    display: inline-block; padding: 6px 12px; background: var(--gp-pri);
+    color: #fff; border-radius: 8px; font-size: 12px;
+    font-weight: 700; font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+}
+
+.prop-tag {
+    font-size: 11px; padding: 4px 8px; background: #fff;
+    color: var(--gp-pri); border: 1px solid var(--gp-border); border-radius: 7px;
+    font-weight: 500; white-space: nowrap; display: inline-block;
+}
+.leave-type-row.hidden {
+    display: none;
+}
+.detail-group {
+    margin-bottom: 16px;
+}
+.detail-label {
+    display: block; font-size: 12px; font-weight: 600;
+    color: var(--gp-text-mid); margin-bottom: 6px; text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.detail-value {
+    font-size: 14px; color: var(--gp-pri); margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+.document-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; background: var(--gp-bg-tint); color: var(--gp-pri);
+    border: 1px solid var(--gp-border); border-radius: 9px;
+    font-size: 13px; font-weight: 600; text-decoration: none;
+    transition: background .2s cubic-bezier(.4,0,.2,1);
+}
+.document-link:hover {
+    background: var(--gp-border);
+}
+.form-row {
+    display: flex; gap: 16px;
+}
+.checkbox-group {
+    display: flex; flex-direction: column; gap: 10px;
+}
+.checkbox-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--gp-pri); cursor: pointer;
+}
+.form-checkbox {
+    width: 16px; height: 16px; cursor: pointer;
+}
+.file-upload-wrapper {
+    position: relative;
+}
+.file-input {
+    display: none;
+}
+.file-upload-label {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px; border: 2px dashed var(--gp-border); border-radius: 10px;
+    background: #fafaf9; cursor: pointer; transition: border-color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1);
+    font-size: 13px; color: var(--gp-text-mid);
+}
+.file-upload-label:hover {
+    border-color: var(--gp-pri); background: var(--gp-bg-tint);
+}
+.config-badge {
+    display: inline-block; font-size: 11px; padding: 5px 12px;
+    background: var(--gp-bg-tint-2); color: var(--gp-pri); border-radius: 999px;
+    font-weight: 600; border: 1px solid var(--gp-border);
+}
+.modal-box {
+    background: #fff; border-radius: 18px; width: 90%; max-width: 600px;
+    max-height: 85vh; display: flex; flex-direction: column;
+    box-shadow: 0 20px 50px rgba(var(--theme-shadow-rgb),.16), 0 2px 10px rgba(var(--theme-shadow-rgb),.05);
+}
+.modal-eyebrow {
+    font-size: 11px; font-weight: 700; color: var(--gp-text-soft);
+    text-transform: uppercase; letter-spacing: 1px;
+    font-family: 'Poppins', sans-serif;
+}
+.modal-sub {
+    font-size: 12.5px; color: var(--gp-text-mid); margin: 4px 0 0 0;
+    font-family: 'Poppins', sans-serif;
+}
+.modal-section-label {
+    font-size: 11px; font-weight: 700; color: var(--gp-text-soft);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 12px; font-family: 'Poppins', sans-serif;
+}
+.modal-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--gp-bg-tint-2);
+    font-size: 13px; color: var(--gp-text-mid);
+}
+.modal-row strong {
+    color: var(--gp-pri); font-weight: 600;
+}
+.modal-footer {
+    padding: 20px 24px; border-top: 1px solid var(--gp-bg-tint-2);
+    display: flex; gap: 10px; justify-content: flex-end;
+}
+#types-tab .payroll-table td {
+    vertical-align: middle;
+    padding: 10px 14px;
+}
+
+#types-tab .payroll-table th:nth-child(1),
+#types-tab .payroll-table td:nth-child(1) {
+    text-align: center;
+}
+
+#types-tab .emp-avatar {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+}
+
+#types-tab .badge-status {
+    padding: 3px 8px;
+    font-size: 10.5px;
+}
+
+/* Responsive table for mobile */
+@media (max-width: 1024px) {
+    #types-tab .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #types-tab .payroll-table {
+        min-width: 800px;
+    }
+}
+
+@media (max-width: 768px) {
+    #types-tab .payroll-table {
+        min-width: 100%;
+        display: block;
+    }
+
+    #types-tab .payroll-table thead {
+        display: none;
+    }
+
+    #types-tab .payroll-table tbody {
+        display: block;
+    }
+
+    #types-tab .payroll-table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid var(--gp-bg-tint-2);
+        border-radius: 12px;
+        padding: 16px;
+        background: #fff;
+        height: auto;
+    }
+
+    #types-tab .payroll-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border: none;
+        text-align: right;
+    }
+
+    #types-tab .payroll-table td:before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 11.5px;
+        color: var(--gp-text-mid);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+    }
+
+    #types-tab .payroll-table td:nth-child(1) {
+        justify-content: center;
+        border-bottom: 1px solid var(--gp-bg-tint-2);
+        padding-bottom: 12px;
+        margin-bottom: 8px;
+    }
+
+    #types-tab .payroll-table td:nth-child(1):before {
+        display: none;
+    }
+
+    #types-tab .row-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+.page-ellipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    color: var(--gp-text-soft);
+    font-weight: 600;
+    font-size: 13px;
+}
+
+#transactions-tab .transaction-row {
+    transition: background-color .15s ease;
+}
+
+#transactions-tab .transaction-row:hover {
+    background: #fafaff;
+}
+
+#transactions-tab .payroll-table td {
+    vertical-align: middle;
+}
+
+#transactions-tab .payroll-table th:nth-child(1),
+#transactions-tab .payroll-table td:nth-child(1) {
+    width: 22%;
+}
+
+#transactions-tab .payroll-table th:last-child,
+#transactions-tab .payroll-table td:last-child {
+    width: 90px;
+}
+
+/* Responsive table for mobile */
+@media (max-width: 1200px) {
+    #transactions-tab .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #transactions-tab .payroll-table {
+        min-width: 1080px;
+    }
+}
+
+@media (max-width: 768px) {
+    #transactions-tab .payroll-table {
+        min-width: 100%;
+        display: block;
+    }
+
+    #transactions-tab .payroll-table thead {
+        display: none;
+    }
+
+    #transactions-tab .payroll-table tbody {
+        display: block;
+    }
+
+    #transactions-tab .payroll-table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid var(--gp-bg-tint-2);
+        border-radius: 12px;
+        padding: 16px;
+        background: #fff;
+        height: auto;
+    }
+
+    #transactions-tab .payroll-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border: none;
+        text-align: right;
+        width: auto !important;
+    }
+
+    #transactions-tab .payroll-table td:before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 11.5px;
+        color: var(--gp-text-mid);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+    }
+
+    #transactions-tab .payroll-table td:nth-child(1) {
+        justify-content: flex-start;
+        border-bottom: 1px solid var(--gp-bg-tint-2);
+        padding-bottom: 12px;
+        margin-bottom: 8px;
+    }
+
+    #transactions-tab .payroll-table td:nth-child(1):before {
+        display: none;
+    }
+
+    #transactions-tab .row-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(var(--theme-primary-rgb), 0.42);
+    -webkit-backdrop-filter: blur(8px) saturate(150%);
+    backdrop-filter: blur(8px) saturate(150%);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 18px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(var(--theme-shadow-rgb),.16), 0 2px 10px rgba(var(--theme-shadow-rgb),.05);
+    position: relative;
+}
+
+/* Form grid for two-column layout */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-grid .form-group {
+    margin-bottom: 0;
+}
+
+/* Form hint text */
+.form-hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--gp-text-mid);
+    margin-top: 4px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Secondary button style */
+.btn-secondary {
+    padding: 10px 16px;
+    background: var(--gp-bg-tint);
+    color: var(--gp-pri);
+    border: 1px solid var(--gp-border);
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    transition: background .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-secondary:hover {
+    background: var(--gp-border);
+}
+
+.btn-secondary:active {
+    transform: scale(.97);
+}
+
+/* Accrual rate row styles */
+.accrual-rate-row.hidden {
+    display: none;
+}
+
+/* Responsive modal */
+@media (max-width: 768px) {
+    .modal-content {
+        max-width: 100%;
+        max-height: 95vh;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid .form-group {
+        grid-column: span 1 !important;
+    }
+}
+
+/* Styles for partials/leave-requests-tab.blade.php */
+.action-ellipsis-btn {
+    background: none;
+    border: none;
+    color: var(--gp-text-soft);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.action-ellipsis-btn:hover {
+    background: var(--theme-neutral-100);
+    color: var(--gp-pri);
+}
+
+.leave-action-menu {
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.table-section:hover {
+    border-color: var(--gp-border) !important;
+    box-shadow: 0 4px 12px rgba(var(--theme-shadow-rgb), .08), 0 2px 4px rgba(var(--theme-shadow-rgb), .06) !important;
+}
+
+/* Styles for partials/transaction-history-tab.blade.php */
+.th-ellipsis-btn {
+    background: none;
+    border: none;
+    color: var(--gp-text-soft);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.th-ellipsis-btn:hover {
+    background: var(--theme-neutral-100);
+    color: var(--gp-pri);
+}
+.th-action-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: #fff;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(var(--theme-shadow-rgb), 0.15);
+    z-index: 100;
+    min-width: 140px;
+    margin-top: 6px;
+    overflow: hidden;
+    animation: thSlideDown 0.2s ease-out;
+}
+.th-action-menu button {
+    width: 100%;
+    padding: 11px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 12px;
+    color: var(--gp-pri);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.th-action-menu button:hover {
+    background: var(--gp-bg-tint-2);
+}
+@keyframes thSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Styles for partials/leave-credits-tab.blade.php */
+.hidden-by-pagination {
+    display: none !important;
+}
+
+/* Styles for modals/migrate-leave-records-modal.blade.php */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Styles for partials/leave-types-tab.blade.php */
+.lt-ellipsis-btn {
+    background: none;
+    border: none;
+    color: var(--gp-text-soft);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.lt-ellipsis-btn:hover {
+    background: var(--theme-neutral-100);
+    color: var(--gp-pri);
+}
+.lt-action-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: #fff;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(var(--theme-shadow-rgb), 0.15);
+    z-index: 100;
+    min-width: 140px;
+    margin-top: 6px;
+    overflow: hidden;
+    animation: ltSlideDown 0.2s ease-out;
+}
+.lt-action-menu button {
+    width: 100%;
+    padding: 11px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 12px;
+    color: var(--gp-pri);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.lt-action-menu button:hover {
+    background: var(--gp-bg-tint-2);
+}
+@keyframes ltSlideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Styles for partials/monetization-requests-tab.blade.php
+
+   The tab was written entirely in inline styles, including its hover
+   states as onmouseover/onmouseout handlers. Three things followed from
+   that, and all three are what this block fixes:
+
+     • the dropdown items were `display: block` with the icon placed by
+       `vertical-align: middle`, while the Leave Types and Transaction
+       History tabs lay theirs out with flex — so the same menu came out
+       with a different item height and a differently-aligned icon
+       depending on which tab it was opened from;
+     • a hover written as an inline handler is lost the moment a row is
+       re-rendered, and it cannot express :focus-visible at all, so the
+       menu was unreachable by keyboard;
+     • the row's status was spelled in raw hex (#f0fdf4 / #fef3c7 /
+       #fef2f2) rather than the semantic ramp, so the pills did not follow
+       the active palette the way every other status badge in the app does.
+
+   Geometry matches the established row menus (.lt-*, .th-*, .to-*)
+   deliberately: 6px/10px on the button, 12px labels, a ~170px sheet. This
+   is the system's size for this control; the point here is to hit it
+   exactly rather than to invent a new one.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.monet-row { transition: background .15s ease; }
+.monet-row:hover { background: var(--theme-neutral-50); }
+.monet-row > td { padding: 13px 16px; border-bottom: 1px solid var(--theme-neutral-200); vertical-align: middle; }
+
+.monet-emp { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.monet-emp-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--theme-neutral-300);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12.5px;
+}
+.monet-emp-text { min-width: 0; }
+/* One clear hierarchy per cell: the name is what the row is about, the id
+   and the plantilla title are what disambiguate it. Giving all three the
+   same weight is what made this column unscannable. */
+.monet-emp-name {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme-neutral-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.monet-emp-meta {
+    margin: 1px 0 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--theme-text-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 230px;
+}
+.monet-emp-meta strong { font-weight: 600; color: var(--theme-neutral-700); }
+
+.monet-dept {
+    display: inline-block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--theme-neutral-100);
+    color: var(--theme-neutral-700);
+}
+
+.monet-reqno { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--gp-pri); white-space: nowrap; }
+.monet-filed { margin: 1px 0 0; font-size: 11px; font-weight: 500; color: var(--theme-text-soft); white-space: nowrap; }
+
+.monet-days { text-align: center; white-space: nowrap; }
+.monet-days-total { font-size: 13px; font-weight: 700; color: var(--gp-pri); }
+.monet-days-split { display: block; font-size: 10.5px; font-weight: 600; color: var(--theme-text-soft); margin-top: 1px; }
+
+.monet-amount { text-align: right; font-size: 13px; font-weight: 700; color: var(--theme-neutral-950); white-space: nowrap; }
+.monet-status-cell { text-align: center; }
+
+/* ── The row action menu ───────────────────────────────────────────── */
+.monet-menu-wrap { position: relative; display: flex; justify-content: center; }
+
+.monet-ellipsis-btn {
+    /* A minimum box rather than padding alone: the icon is the only thing
+       sizing this control, so a missing or differently-sized glyph would
+       otherwise change the button — and with it the row height. */
+    min-width: 36px;
+    height: 28px;
+    padding: 6px 10px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--gp-text-soft);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s ease, color .2s ease, transform .1s ease;
+}
+.monet-ellipsis-btn svg { flex-shrink: 0; display: block; }
+.monet-ellipsis-btn:hover,
+.monet-ellipsis-btn[aria-expanded="true"] { background: var(--theme-neutral-100); color: var(--gp-pri); }
+.monet-ellipsis-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--theme-focus-ring); color: var(--gp-pri); }
+.monet-ellipsis-btn:active { transform: scale(.94); }
+
+.monet-action-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 6px;
+    min-width: 172px;
+    background: #fff;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(var(--theme-shadow-rgb), .15);
+    z-index: 1200;
+    overflow: hidden;
+    padding: 4px;
+}
+/* Opened, the sheet is moved to <body> and placed against the viewport.
+   `.table-wrapper` scrolls, so an absolutely-positioned menu on the last
+   row — or on any row once the table is scrolled sideways — was clipped
+   by its own container. `position: fixed` alone would not have been
+   enough: `.glass-shell .table-section` carries a `backdrop-filter`, and
+   an ancestor with one becomes the containing block for fixed
+   descendants, so the menu would still have been clipped and offset.
+   Leaving the element's own subtree is the only thing that escapes both.
+   The JS sets left/top and flips the sheet above the button when there is
+   no room below, which is what keeps the last row's menu on screen. */
+.monet-action-menu.is-open { display: block; animation: monetMenuIn .16s ease-out; }
+.monet-action-menu.is-floating { position: fixed; right: auto; top: auto; margin-top: 0; }
+
+.monet-action-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    text-align: left;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--gp-pri);
+    cursor: pointer;
+    transition: background .16s ease, color .16s ease;
+}
+/* The icon never participates in the flex squeeze, so a long label wraps
+   instead of crushing the glyph beside it. */
+.monet-action-menu button svg { flex-shrink: 0; }
+.monet-action-menu button:hover { background: var(--gp-bg-tint-2); }
+.monet-action-menu button:focus-visible { outline: none; background: var(--gp-bg-tint-2); box-shadow: inset 0 0 0 2px var(--theme-focus-ring); }
+
+.monet-action-menu .is-approve { color: var(--theme-success-emphasis); }
+.monet-action-menu .is-approve:hover,
+.monet-action-menu .is-approve:focus-visible { background: var(--theme-success-subtle); }
+.monet-action-menu .is-disapprove { color: var(--theme-danger); }
+.monet-action-menu .is-disapprove:hover,
+.monet-action-menu .is-disapprove:focus-visible { background: var(--theme-danger-subtle); }
+
+/* Which actions a row offers is decided by the row's own status, so the
+   menu is rendered once in full and the status drives what shows. That is
+   what lets an approved request grow its Print/Download items — and lose
+   its Approve/Disapprove ones — in place, without a second copy of this
+   markup living in JavaScript to drift away from the Blade. The server
+   re-checks the status on every one of these endpoints regardless; the
+   hiding is tidiness, not the permission.
+
+   The status is read off the menu itself rather than off the row, because
+   an open menu is no longer inside its row — see is-floating above. */
+.monet-action-menu [data-monet-item] { display: none; }
+.monet-action-menu[data-status="Pending"] [data-monet-item="approve"],
+.monet-action-menu[data-status="Pending"] [data-monet-item="disapprove"],
+.monet-action-menu[data-status="Approved"] [data-monet-item="print"],
+.monet-action-menu[data-status="Approved"] [data-monet-item="download"] { display: flex; }
+
+@keyframes monetMenuIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .monet-action-menu.is-open { animation: none; }
+    .monet-ellipsis-btn:active { transform: none; }
+}
+
+/* ── Empty states ──────────────────────────────────────────────────── */
+.monet-empty-td { text-align: center; padding: 56px 20px; border-bottom: none; }
+.monet-empty-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--theme-neutral-100);
+    color: var(--theme-text-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.monet-empty-title { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: var(--theme-neutral-800); }
+.monet-empty-sub { margin: 0; font-size: 12.5px; color: var(--theme-text-mid); }
+
+/* ── Detail modal ──────────────────────────────────────────────────── */
+/* Grouped panels rather than one long list of label/value rows. The
+   sheet's own computation stays a single block, because the office's form
+   shows its working and splitting the three factors apart would stop it
+   reading as an equation. */
+.monet-detail { display: grid; gap: 14px; }
+
+.monet-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.5;
+    border: 1px solid transparent;
+}
+.monet-banner svg { flex-shrink: 0; }
+.monet-banner strong { font-weight: 800; }
+.monet-banner.is-pending  { background: var(--theme-warning-subtle); border-color: var(--theme-warning-border); color: var(--theme-warning-emphasis); }
+.monet-banner.is-approved { background: var(--theme-success-subtle); border-color: var(--theme-success-border); color: var(--theme-success-emphasis); }
+.monet-banner.is-danger   { background: var(--theme-danger-subtle);  border-color: var(--theme-danger-border);  color: var(--theme-danger-emphasis); }
+.monet-banner.is-neutral  { background: var(--theme-neutral-100);    border-color: var(--theme-neutral-300);    color: var(--theme-text-mid); }
+
+.monet-group {
+    border: 1px solid var(--theme-neutral-200);
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+.monet-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: var(--theme-neutral-50);
+    border-bottom: 1px solid var(--theme-neutral-200);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--theme-neutral-700);
+}
+.monet-group-head svg { flex-shrink: 0; color: var(--gp-pri); }
+
+.monet-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--theme-neutral-200);
+    margin: 0;
+}
+.monet-field { background: #fff; padding: 10px 14px; min-width: 0; }
+.monet-field.is-wide { grid-column: 1 / -1; }
+.monet-field dt {
+    margin: 0 0 3px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    color: var(--theme-text-soft);
+}
+.monet-field dd {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme-neutral-900);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.monet-field dd.is-money { font-size: 14px; font-weight: 800; color: var(--theme-neutral-950); }
+.monet-field dd.is-muted { font-weight: 500; color: var(--theme-text-mid); }
+.monet-field.is-danger dt { color: var(--theme-danger); }
+
+/* The computation, as the office's sheet spells it. */
+.monet-working {
+    background: var(--theme-neutral-50);
+    border-top: 1px solid var(--theme-neutral-200);
+    padding: 12px 14px;
+    font-size: 12.5px;
+    display: grid;
+    gap: 5px;
+    color: var(--theme-text-mid);
+}
+.monet-working .monet-working-key { color: var(--theme-neutral-800); font-weight: 600; }
+.monet-working-total {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--theme-neutral-300);
+    font-weight: 700;
+    color: var(--theme-neutral-900);
+}
+.monet-working-total span { color: var(--gp-pri); font-size: 15px; font-weight: 800; }
+
+/* ── Disapproval dialog ────────────────────────────────────────────── */
+.monet-reject-summary {
+    display: grid;
+    gap: 6px;
+    border: 1px solid var(--theme-neutral-200);
+    border-radius: 10px;
+    background: var(--theme-neutral-50);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 12.5px;
+}
+.monet-reject-summary > div { display: flex; justify-content: space-between; gap: 12px; }
+.monet-reject-summary span { color: var(--theme-text-mid); font-weight: 600; }
+.monet-reject-summary strong { color: var(--theme-neutral-900); font-weight: 700; text-align: right; }
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+/* The table keeps a floor width so the seven columns never collapse into
+   each other; below that the wrapper scrolls, which is the honest
+   behaviour for a register with this many columns. */
+#monetization-tab .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+#monetization-tab .payroll-table { min-width: 900px; }
+
+@media (max-width: 900px) {
+    .monet-fields { grid-template-columns: minmax(0, 1fr); }
+}

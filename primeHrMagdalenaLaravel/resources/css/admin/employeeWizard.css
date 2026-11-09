@@ -1,0 +1,1618 @@
+/* Draft Continue/Start Over Prompt */
+.wizard-draft-prompt-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(var(--theme-primary-rgb), 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.wizard-draft-prompt-card {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 28px 26px 22px;
+    text-align: center;
+    box-shadow: 0 25px 60px -12px rgba(var(--theme-primary-rgb), 0.4);
+    animation: wizardDraftPromptIn 0.22s ease;
+}
+@keyframes wizardDraftPromptIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.wizard-draft-prompt-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gp-bg-tint-2);
+    color: var(--gp-pri);
+}
+.wizard-draft-prompt-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--gp-pri);
+    margin: 0 0 8px;
+}
+.wizard-draft-prompt-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--gp-text-mid);
+    margin: 0 0 22px;
+}
+.wizard-draft-prompt-actions {
+    display: flex;
+    gap: 10px;
+}
+.wizard-draft-prompt-btn {
+    flex: 1;
+    padding: 11px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
+}
+.wizard-draft-prompt-btn:active { transform: scale(0.97); }
+.wizard-draft-prompt-startover {
+    background: #fff;
+    border: 1.5px solid #d8d6ec;
+    color: var(--gp-text-mid);
+}
+.wizard-draft-prompt-startover:hover {
+    background: var(--gp-bg-tint);
+    border-color: var(--gp-pri);
+    color: var(--gp-pri);
+}
+.wizard-draft-prompt-continue {
+    background: var(--gp-pri);
+    border: 1.5px solid var(--gp-pri);
+    color: #fff;
+}
+.wizard-draft-prompt-continue:hover {
+    background: var(--gp-pri-2);
+    border-color: var(--gp-pri-2);
+}
+@media (max-width: 480px) {
+    .wizard-draft-prompt-actions { flex-direction: column-reverse; }
+}
+
+/* Employee Wizard Modal */
+#employeeWizardModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+.wizard-modal-container {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 0;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(var(--theme-primary-rgb), 0.15);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.wizard-header {
+    background: linear-gradient(150deg, var(--gp-pri-2) 0%, var(--gp-pri) 62%);
+    color: var(--theme-on-primary);
+    padding: 22px 24px 18px;
+    border-radius: 14px 14px 0 0;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    flex-shrink: 0;
+}
+/* Soft bloom so the flat brand panel reads as a surface, not a block of
+   ink — the same treatment the settings profile card uses. */
+.wizard-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(360px 200px at 88% -20%, rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.16), transparent 62%),
+        radial-gradient(260px 180px at 0% 120%, rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.09), transparent 60%);
+}
+
+.wizard-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.wizard-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.25px;
+}
+
+.wizard-subtitle {
+    margin: 5px 0 0;
+    font-size: 12px;
+    letter-spacing: 0.1px;
+}
+
+.wizard-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.12);
+    border: 1px solid rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.18);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.18s ease;
+    line-height: 1;
+    padding: 0;
+}
+.wizard-close-btn:hover {
+    background: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.22);
+}
+.wizard-close-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.35);
+}
+
+/* The header is a filled brand panel, so everything on it takes the
+   foreground SystemTheme measured for that fill rather than a literal.
+
+   `color: #fff` on .wizard-header was never reaching these two: .wizard-title
+   is an <h3> and .wizard-subtitle is a <p>, and admin.css sets
+   `h1..h6 { color: var(--c-ink) }` and `p { color: var(--c-muted) }`.
+   Inheritance loses to any matching rule, however weak its selector, so the
+   title rendered in the dark brand colour *on the dark brand panel* — under
+   the gold palette that was #837707 on #837707. */
+.wizard-title,
+.wizard-subtitle,
+.wizard-close-btn {
+    color: var(--theme-on-primary);
+}
+.wizard-subtitle { opacity: 0.82; }
+
+/* Progress Bar */
+#progressBar {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    overflow-x: auto;
+    padding: 0 0 8px;
+    scroll-behavior: smooth;
+}
+
+.wizard-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    flex-shrink: 0;
+    min-width: 60px;
+    cursor: pointer;
+}
+.wizard-step:focus-visible {
+    outline: 2px solid var(--theme-on-primary);
+    outline-offset: 3px;
+    border-radius: 8px;
+}
+.wizard-step:hover .wizard-circle {
+    background: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.4);
+    border-color: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.7);
+}
+.wizard-step:hover .wizard-label {
+    color: var(--theme-on-primary);
+}
+
+.wizard-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.2);
+    color: var(--theme-on-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    border: 2px solid rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.3);
+    transition: all 0.3s ease;
+}
+
+.wizard-step.active .wizard-circle {
+    background: var(--theme-on-primary);
+    color: var(--gp-pri);
+    border-color: var(--theme-on-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.wizard-label {
+    font-size: 11px;
+    color: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.7);
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.wizard-step.active .wizard-label {
+    color: var(--theme-on-primary);
+    font-weight: 600;
+}
+
+.wizard-connector {
+    position: absolute;
+    top: 18px;
+    width: 50px;
+    height: 2px;
+    background: rgba(var(--theme-on-primary-rgb, 255, 255, 255), 0.2);
+    z-index: -1;
+}
+
+/* Form Content */
+.wizard-form {
+    padding: 32px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.wizard-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.wizard-section-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--gp-border);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.1px;
+    color: var(--gp-pri);
+}
+/* The icon sits in a tinted chip so the heading reads as a labelled section
+   rather than a line of text with a picture in front of it. */
+.wizard-section-icon {
+    flex-shrink: 0;
+    box-sizing: content-box;
+    padding: 6px;
+    border-radius: 8px;
+    background: var(--theme-primary-light);
+    color: var(--theme-stat-icon-fg);
+}
+.wizard-address-title,
+.wizard-info-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+/* The review headings are built in JS as `<div class="review-section-title">`
+   with the icon inlined ahead of the label; without this the icon sat on its
+   own line above the text. */
+.review-section-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.wizard-address-icon { flex-shrink: 0; color: var(--theme-accent); }
+.wizard-info-icon,
+.wizard-success-tick { flex-shrink: 0; }
+.wizard-review-icon { flex-shrink: 0; color: var(--theme-accent); }
+
+.wizard-info-box {
+    background: var(--theme-info-subtle);
+    border: 1px solid var(--theme-info-border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.wizard-info-title {
+    margin: 0;
+    font-size: 12px;
+    color: var(--theme-info-emphasis);
+}
+
+.wizard-info-text {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: var(--theme-info-emphasis);
+}
+
+.wizard-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.wizard-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.wizard-field {
+    margin-bottom: 16px;
+}
+
+.wizard-label-text {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-neutral-800);
+    margin-bottom: 6px;
+}
+
+.wizard-input,
+.wizard-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e5e5e8;
+    border-radius: 8px;
+    font-size: 13px;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+.wizard-select {
+    background: #fff;
+}
+
+.wizard-input:focus,
+.wizard-select:focus {
+    border-color: var(--gp-pri);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.wizard-hint {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: var(--gp-text-mid);
+}
+
+/* Password — no longer a field. The server generates it and emails it, so step
+   2 states that rather than offering a box (see TemporaryPasswordService). The
+   show/hide toggle styles that used to sit here went with the inputs. */
+.wizard-pw-notice {
+    margin-top: 6px;
+}
+
+/* Real-time validation state — the error message swaps into the .wizard-hint
+   line itself (see employeeWizardValidation.js), this just colors it. */
+.wizard-hint-error {
+    color: #dc2626;
+    font-weight: 600;
+}
+.wizard-input-invalid,
+.wizard-select-invalid {
+    border-color: #dc2626 !important;
+}
+.wizard-input-invalid:focus,
+.wizard-select-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+}
+.wizard-hint-valid {
+    color: #15803d;
+}
+.wizard-input-valid,
+.wizard-select-valid {
+    border-color: #15803d !important;
+}
+.wizard-input-valid:focus,
+.wizard-select-valid:focus {
+    box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.15) !important;
+}
+
+.wizard-role-checkboxes {
+    border: 1px solid #e5e5e8;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.wizard-role-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+    font-size: 13px;
+    color: var(--theme-neutral-800);
+}
+
+.wizard-role-checkbox:hover {
+    background: var(--gp-bg-tint);
+}
+
+.wizard-role-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--gp-pri);
+    flex-shrink: 0;
+}
+
+.wizard-address-header {
+    background: #f8f8fb;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.wizard-address-title {
+    margin: 0 0 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gp-pri);
+}
+
+/* Review Section */
+.wizard-review-content {
+    background: var(--gp-bg-tint);
+    padding: 20px;
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.review-section {
+    margin-bottom: 16px;
+}
+
+.review-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e5e8;
+}
+
+.review-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.review-item {
+    font-size: 12px;
+}
+
+.review-label {
+    color: var(--gp-text-mid);
+    font-size: 11px;
+    margin-bottom: 2px;
+}
+
+.review-value {
+    color: var(--gp-pri);
+    font-weight: 600;
+}
+
+.wizard-success-box {
+    background: var(--theme-success-subtle);
+    border: 1px solid var(--theme-success-border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+}
+
+.wizard-success-icon {
+    flex-shrink: 0;
+}
+
+.wizard-success-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gp-good);
+}
+
+.wizard-success-text {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #047857;
+}
+
+/* Footer */
+.wizard-footer {
+    border-top: 1px solid #e5e5e8;
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9fb;
+    border-radius: 0 0 12px 12px;
+    flex-shrink: 0;
+}
+
+.wizard-footer-actions {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.wizard-btn {
+    /* inline-flex, not the default: Tailwind's preflight sets
+       `svg { display: block }`, so an icon inside a plain button takes a
+       whole line to itself and pushes the label underneath it — which is
+       what stacked the tick above "Submit". Every other icon button in the
+       app (.btn-export, .modal-btn-*) already declares this for the same
+       reason. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+
+.wizard-btn-prev {
+    border: 1px solid #e5e5e8;
+    background: #fff;
+    color: var(--gp-pri);
+}
+
+.wizard-btn-cancel {
+    border: 1px solid #e5e5e8;
+    background: #fff;
+    color: var(--gp-text-mid);
+}
+
+.wizard-btn-next {
+    border: none;
+    background: var(--gp-pri);
+    color: #fff;
+}
+
+.wizard-btn-submit {
+    border: none;
+    background: var(--gp-good);
+    color: #fff;
+}
+
+/* QR Code Button */
+.btn-qr {
+    padding: 6px 12px;
+    background: var(--gp-accent-gold);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    transition: background .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1);
+}
+
+.btn-qr:hover {
+    background: #b89f00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(217, 187, 0, 0.3);
+}
+
+.btn-qr:active {
+    transform: scale(.96);
+}
+
+/* ══════════════════════════════════════════════════════
+   STEP 6 — SUPPORTING DOCUMENTS (201 FILE)
+   Twelve documents as cards rather than twelve bare file
+   inputs: each one reports what is attached, what format
+   it will take, and what is already on the server.
+══════════════════════════════════════════════════════ */
+
+.doc-intro {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: var(--theme-primary-soft);
+    border: 1px solid var(--theme-primary-border);
+    border-radius: 12px;
+}
+
+.doc-intro-text { flex: 1; min-width: 0; }
+
+.doc-intro-lead {
+    margin: 0 0 8px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--theme-neutral-800);
+}
+
+.doc-intro-formats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+}
+
+.doc-intro-formats-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--theme-neutral-700);
+    margin-right: 2px;
+}
+
+.doc-format-chip {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--theme-on-primary);
+    border: 1px solid var(--theme-primary-border);
+    color: var(--theme-primary);
+}
+
+.doc-intro-size {
+    font-size: 11px;
+    color: var(--gp-text-mid);
+    margin-left: 4px;
+}
+
+/* Attached counter — the one thing twelve optional inputs cannot tell you
+   by looking at them. */
+.doc-progress {
+    flex: 0 0 96px;
+    text-align: center;
+}
+
+.doc-progress-count {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--gp-pri);
+}
+
+.doc-progress-total {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme-neutral-500);
+}
+
+.doc-progress-label {
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--gp-text-mid);
+    margin: 3px 0 6px;
+}
+
+.doc-progress-track {
+    height: 4px;
+    border-radius: 3px;
+    background: var(--theme-primary-200);
+    overflow: hidden;
+}
+
+.doc-progress-fill {
+    height: 100%;
+    background: var(--gp-pri);
+    border-radius: 3px;
+    transition: width .25s ease;
+}
+
+.doc-payload-warning {
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--theme-warning-subtle);
+    border: 1px solid var(--theme-warning-border);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--theme-warning-emphasis);
+}
+
+.doc-payload-warning[hidden] { display: none !important; }
+
+/* `hidden` has to be spelled out: the strips below set `display:flex`/`block`,
+   and a class-level display beats the user agent's `[hidden] { display:none }`
+   — without this every card shows an empty "attached" bar before a file is
+   picked, which reads as twelve documents already supplied. */
+.doc-picked[hidden],
+.doc-error[hidden] { display: none !important; }
+
+.doc-group { margin-bottom: 22px; }
+
+.doc-group-head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--theme-border);
+}
+
+.doc-group-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--gp-pri);
+}
+
+.doc-group-hint {
+    font-size: 11px;
+    color: var(--gp-text-mid);
+}
+
+.doc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.doc-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 10px;
+    background: var(--theme-on-primary);
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.doc-card:hover { border-color: var(--theme-primary-400); }
+
+/* The file input is stretched over the card's face, so the browser handles
+   the click AND the drop natively and the control stays in the tab order —
+   a `display:none` input with a styled label would lose both. */
+.doc-face {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 12px;
+}
+
+.doc-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.doc-card:has(.doc-input:focus-visible) {
+    border-color: var(--gp-pri);
+    box-shadow: 0 0 0 3px var(--theme-focus-ring);
+}
+
+.doc-card-drag {
+    border-color: var(--gp-pri);
+    border-style: dashed;
+    background: var(--theme-primary-soft);
+}
+
+.doc-thumb {
+    flex: 0 0 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--theme-neutral-100);
+    color: var(--theme-neutral-600);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    overflow: hidden;
+}
+
+.doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Format families keep their own hue rather than following the theme, for the
+   same reason the chart legend's categorical hues do: the badge exists to tell
+   a spreadsheet from a scan at a glance. */
+.doc-thumb-pdf   { background: var(--theme-danger-subtle);  color: var(--theme-danger-emphasis); }
+.doc-thumb-word  { background: var(--theme-info-subtle);    color: var(--theme-info-emphasis); }
+.doc-thumb-sheet { background: var(--theme-success-subtle); color: var(--theme-success-emphasis); }
+.doc-thumb-other { background: var(--theme-warning-subtle); color: var(--theme-warning-emphasis); }
+
+.doc-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.doc-name {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--theme-neutral-800);
+}
+
+.doc-note {
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--gp-text-mid);
+}
+
+.doc-meta {
+    font-size: 10.5px;
+    color: var(--theme-neutral-500);
+    margin-top: 2px;
+}
+
+.doc-cta {
+    flex: 0 0 auto;
+    align-self: center;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: var(--theme-primary-100);
+    color: var(--gp-pri);
+}
+
+.doc-card:hover .doc-cta { background: var(--theme-primary-200); }
+
+.doc-card-filled { border-color: var(--theme-success-border); }
+.doc-card-filled .doc-cta {
+    background: var(--theme-neutral-100);
+    color: var(--theme-neutral-700);
+}
+
+/* The chosen file, its size, and the only way to un-choose it — a bare file
+   input can be replaced but never emptied. */
+.doc-picked {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    background: var(--theme-success-subtle);
+    border-top: 1px solid var(--theme-success-border);
+    position: relative;
+    z-index: 3;
+}
+
+.doc-picked-tick { flex: 0 0 auto; color: var(--theme-success); }
+
+.doc-picked-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--theme-success-emphasis);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-picked-size {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: var(--theme-neutral-700);
+}
+
+.doc-remove {
+    flex: 0 0 auto;
+    border: none;
+    background: none;
+    padding: 2px 4px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--theme-danger);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.doc-remove:hover { background: var(--theme-danger-subtle); }
+
+.doc-card-error { border-color: var(--theme-danger-border); }
+
+.doc-error {
+    margin: 0;
+    padding: 7px 12px;
+    background: var(--theme-danger-subtle);
+    border-top: 1px solid var(--theme-danger-border);
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--theme-danger-emphasis);
+    position: relative;
+    z-index: 3;
+}
+
+/* The number field, inside the card the scan was uploaded on. The scan comes
+   first because the number is read out of it; a wrong-looking number is then a
+   prompt to check the image right above it. */
+.govid-number {
+    padding: 10px 12px;
+    border-top: 1px solid var(--theme-neutral-200);
+    background: var(--theme-neutral-50);
+    position: relative;
+    z-index: 3;
+}
+
+.govid-number-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--theme-neutral-700);
+    margin-bottom: 5px;
+}
+
+.govid-number-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-neutral-300);
+    border-radius: 7px;
+    background: var(--theme-on-primary);
+    font-family: 'Poppins', sans-serif;
+    font-size: 12.5px;
+    box-sizing: border-box;
+}
+
+.govid-number-input:focus {
+    border-color: var(--gp-pri);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--theme-focus-ring);
+}
+
+/* The OCR read-back. Empty until a scan is processed, so it takes no room
+   until it has something to say. */
+.govid-ocr-status {
+    margin: 5px 0 0;
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--gp-text-mid);
+}
+
+.govid-ocr-status:empty { display: none; }
+
+/* Edit mode: the copy already held on the server. */
+.wizard-supporting-current,
+.wizard-govid-current {
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: var(--theme-primary-soft);
+    border-top: 1px solid var(--theme-primary-border);
+    position: relative;
+    z-index: 3;
+}
+
+.doc-onfile-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--theme-primary-200);
+    color: var(--gp-pri);
+}
+
+.doc-onfile-link {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--theme-link);
+    text-decoration: underline;
+}
+
+.doc-onfile-note {
+    font-size: 10px;
+    color: var(--gp-text-mid);
+    margin-left: auto;
+}
+
+.doc-card-onfile { border-color: var(--theme-primary-border); }
+
+/* A gov-ID card carries a number field below the strips, so its "on file" row
+   is a divider between two halves rather than the card's last line. */
+.govid-card .wizard-govid-current { border-bottom: 1px solid var(--theme-primary-border); }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS FOR EMPLOYEE WIZARD
+══════════════════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+    .wizard-modal-container { max-width: 95vw; margin: 10px; }
+    
+    .wizard-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+    .wizard-modal-container { max-width: 100%; margin: 0; border-radius: 0; max-height: 100vh; }
+    
+    .wizard-header { padding: 20px; border-radius: 0; }
+    .wizard-title { font-size: 16px; }
+    .wizard-subtitle { font-size: 12px; }
+    
+    .wizard-form { padding: 24px 20px; }
+    
+    .wizard-grid-2, .wizard-grid-3 { grid-template-columns: 1fr; gap: 10px; }
+
+    .doc-grid { grid-template-columns: 1fr; }
+    .doc-intro { flex-direction: column; align-items: stretch; gap: 12px; }
+    .doc-progress { flex: none; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .doc-progress-label { margin: 0; }
+    .doc-progress-track { flex: 1; max-width: 160px; }
+    
+    .wizard-footer { padding: 16px 20px; }
+    
+    .review-row { grid-template-columns: 1fr; gap: 8px; }
+    
+    #progressBar { overflow-x: auto; padding-bottom: 4px; }
+    .wizard-step { min-width: 50px; }
+    .wizard-circle { width: 32px; height: 32px; font-size: 12px; }
+    .wizard-label { font-size: 10px; }
+}
+
+@media (max-width: 640px) {
+    .wizard-header { padding: 16px; }
+    .wizard-title { font-size: 15px; }
+    
+    .wizard-form { padding: 20px 16px; }
+    
+    .wizard-section-title { font-size: 13px; margin-bottom: 16px; }
+    
+    .wizard-field { margin-bottom: 14px; }
+    .wizard-label-text { font-size: 11px; }
+    .wizard-input, .wizard-select { padding: 9px 10px; font-size: 12px; }
+
+    .doc-face { padding: 10px; gap: 9px; }
+    .doc-thumb { flex-basis: 32px; height: 32px; }
+    .doc-name { font-size: 11.5px; }
+    .doc-cta { display: none; }
+    
+    .wizard-footer { padding: 14px 16px; flex-direction: column; gap: 10px; }
+    .wizard-footer-actions { width: 100%; justify-content: stretch; }
+    .wizard-btn { width: 100%; justify-content: center; }
+    
+    .wizard-step { min-width: 45px; }
+    .wizard-circle { width: 28px; height: 28px; font-size: 11px; }
+    .wizard-label { font-size: 9px; }
+    .wizard-connector { width: 40px; top: 14px; }
+}
+
+@media (max-width: 480px) {
+    .wizard-header { padding: 14px; }
+    .wizard-title { font-size: 14px; }
+    .wizard-subtitle { font-size: 11px; }
+    
+    .wizard-form { padding: 16px 12px; }
+    
+    .wizard-btn { padding: 9px 16px; font-size: 12px; }
+    
+    .wizard-info-box { padding: 10px; }
+    .wizard-info-title { font-size: 11px; }
+    .wizard-info-text { font-size: 10px; }
+    
+    .wizard-review-content { padding: 16px; }
+    .review-section-title { font-size: 11px; }
+    .review-label { font-size: 10px; }
+    .review-value { font-size: 11px; }
+}
+
+/* ══════════════════════════════════════════════════════
+   PERSONNEL PAGE RESPONSIVE STYLES
+══════════════════════════════════════════════════════ */
+
+/* Prevent horizontal page scroll */
+body, html {
+    overflow-x: hidden;
+}
+
+.main-content {
+    overflow-x: hidden;
+}
+
+/* Stats Grid Responsiveness */
+@media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 640px) {
+    .stats-grid { grid-template-columns: 1fr !important; }
+    .stat-card { padding: 16px; }
+}
+
+/* Table Responsiveness - Only Table Scrolls, Not Page */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+}
+
+/* Scrollbar styling for better UX */
+.table-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: var(--gp-bg-tint);
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: var(--gp-pri);
+    border-radius: 4px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--gp-pri-2);
+}
+
+.payroll-table {
+    min-width: 1200px;
+    width: 100%;
+}
+
+/* Schedule table needs more width */
+#scheduleTable {
+    min-width: 1400px;
+}
+
+/* Fade effect on table edges when scrollable */
+.table-wrapper.has-scroll::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 8px;
+    width: 40px;
+    background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.table-wrapper.has-scroll.scrolled-right::after {
+    opacity: 0;
+}
+
+@media (max-width: 1024px) {
+    .table-header { flex-direction: column; gap: 16px; align-items: stretch; }
+    .table-actions { flex-wrap: wrap; gap: 8px; }
+    .table-actions > * { flex: 1; min-width: 120px; }
+}
+
+@media (max-width: 768px) {
+    .table-footer { flex-direction: column; gap: 12px; align-items: stretch; }
+    .pagination { justify-content: center; }
+    
+    /* Ensure table wrapper has proper scrolling */
+    .table-wrapper {
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 1px rgba(var(--theme-primary-rgb),0.08);
+    }
+}
+
+/* Modal Responsiveness */
+@media (max-width: 768px) {
+    #assignScheduleModal > div,
+    #bulkScheduleModal > div,
+    #viewSchedulesModal > div,
+    #viewEmployeeModal > div {
+        max-width: 95vw !important;
+        margin: 10px !important;
+    }
+    
+    .wizard-grid-2 { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 640px) {
+    #assignScheduleModal > div,
+    #bulkScheduleModal > div,
+    #viewSchedulesModal > div,
+    #viewEmployeeModal > div {
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        max-height: 100vh !important;
+    }
+    
+    /* Modal Headers */
+    #assignScheduleModal > div > div:first-child,
+    #bulkScheduleModal > div > div:first-child,
+    #viewSchedulesModal > div > div:first-child,
+    #viewEmployeeModal > div > div:first-child {
+        padding: 16px !important;
+        border-radius: 0 !important;
+    }
+    
+    /* Modal Content */
+    #assignScheduleModal form > div:first-child,
+    #bulkScheduleModal form > div:first-child,
+    #viewSchedulesModal > div > div:nth-child(2),
+    #viewEmployeeModal > div > div:nth-child(2) {
+        padding: 20px 16px !important;
+    }
+    
+    /* Modal Footers */
+    #assignScheduleModal form > div:last-child,
+    #bulkScheduleModal form > div:last-child,
+    #viewSchedulesModal > div > div:last-child,
+    #viewEmployeeModal > div > div:last-child {
+        padding: 14px 16px !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    #assignScheduleModal form > div:last-child > button,
+    #bulkScheduleModal form > div:last-child > button,
+    #viewSchedulesModal > div > div:last-child > button,
+    #viewEmployeeModal > div > div:last-child > button {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+}
+
+/* Row Actions with 3-Dot Menu */
+.row-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Desktop Large Screens: Show individual buttons */
+.row-actions .action-menu-wrapper {
+    display: none; /* Hidden on very large screens */
+}
+
+.row-actions .action-buttons-desktop {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.action-buttons-desktop button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--gp-bg-tint);
+    border: 1.5px solid var(--gp-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    font-family: 'Poppins', sans-serif;
+}
+
+.action-buttons-desktop button:hover {
+    background: var(--gp-bg-tint-2);
+    border-color: var(--gp-pri);
+}
+
+.action-buttons-desktop button svg {
+    flex-shrink: 0;
+}
+
+.action-buttons-desktop .btn-view:hover {
+    background: #e8f5ff;
+    border-color: var(--gp-pri);
+}
+
+.action-buttons-desktop .btn-edit:hover {
+    background: #f3e8ff;
+    border-color: var(--gp-text-mid);
+}
+
+.action-buttons-desktop .btn-qr:hover {
+    background: #fffbeb;
+    border-color: var(--gp-accent-gold);
+}
+
+.action-buttons-desktop .btn-deactivate {
+    color: var(--gp-bad);
+}
+
+.action-buttons-desktop .btn-deactivate:hover {
+    background: #fee8e8;
+    border-color: var(--gp-bad);
+}
+
+.action-buttons-desktop .btn-activate {
+    color: var(--gp-good);
+}
+
+.action-buttons-desktop .btn-activate:hover {
+    background: #e8f9ef;
+    border-color: var(--gp-good);
+}
+
+/* Show 3-dot menu on screens up to 1920px (most desktops) */
+@media (max-width: 1920px) {
+    .row-actions .action-buttons-desktop {
+        display: none; /* Hide individual buttons */
+    }
+    
+    .row-actions .action-menu-wrapper {
+        display: block; /* Show 3-dot menu */
+    }
+}
+
+/* 3-Dot Menu Button */
+.action-menu-wrapper {
+    position: relative;
+}
+
+.action-menu-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gp-bg-tint);
+    border: 1.5px solid var(--gp-border);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .2s cubic-bezier(.4,0,.2,1), border-color .2s cubic-bezier(.4,0,.2,1), color .2s cubic-bezier(.4,0,.2,1), transform .15s ease;
+    color: var(--gp-text-mid);
+}
+
+.action-menu-btn:hover {
+    background: var(--gp-bg-tint-2);
+    border-color: var(--gp-pri);
+    color: var(--gp-pri);
+}
+
+.action-menu-btn:active {
+    transform: scale(0.95);
+}
+
+.action-menu-btn svg {
+    flex-shrink: 0;
+}
+
+/* Dropdown Menu */
+.action-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: rgba(255,255,255,.92);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border: 1.5px solid var(--gp-border);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(var(--theme-shadow-rgb),.14), 0 2px 8px rgba(var(--theme-shadow-rgb),.05);
+    min-width: 200px;
+    padding: 6px;
+    z-index: 1000;
+    display: none;
+    animation: dropdownFadeIn 0.18s cubic-bezier(.32,.72,0,1);
+}
+
+.action-menu-dropdown.active {
+    display: block;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Menu Items */
+.action-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s cubic-bezier(.4,0,.2,1);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gp-pri);
+    text-align: left;
+    font-family: 'Poppins', sans-serif;
+}
+
+.action-menu-item:hover {
+    background: var(--gp-bg-tint);
+    color: var(--gp-pri);
+}
+
+.action-menu-item svg {
+    flex-shrink: 0;
+    stroke: currentColor;
+}
+
+.action-menu-item span {
+    flex: 1;
+}
+
+/* Danger Item */
+.action-menu-item.danger {
+    color: var(--gp-bad);
+}
+
+.action-menu-item.danger:hover {
+    background: #fdedec;
+    color: var(--gp-bad);
+}
+
+/* Success Item */
+.action-menu-item.success {
+    color: var(--gp-good);
+}
+
+.action-menu-item.success:hover {
+    background: #e9f9ef;
+    color: var(--gp-good);
+}
+
+/* Divider */
+.action-menu-divider {
+    height: 1px;
+    background: var(--gp-bg-tint-2);
+    margin: 6px 0;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+    .action-menu-dropdown {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 180px;
+    }
+    
+    .action-menu-dropdown.active {
+        transform: translateX(-50%) translateY(0);
+    }
+    
+    .action-menu-item {
+        padding: 12px;
+        font-size: 14px;
+    }
+}
+
+/* Tab Buttons Responsiveness */
+@media (max-width: 640px) {
+    .tab-btn { padding: 10px 14px; font-size: 12px; gap: 6px; }
+    .tab-btn svg { width: 14px; height: 14px; }
+}
+
+/* QR Code Modal Responsiveness */
+@media (max-width: 640px) {
+    #qrCodeModal > div {
+        max-width: 95vw !important;
+        padding: 24px 16px !important;
+    }
+    
+    #qrCodeContainer { min-height: 250px !important; }
+}
+
+/* Confirmation Modal Responsiveness */
+@media (max-width: 640px) {
+    #confirmModal > div,
+    #successModal > div,
+    #errorModal > div,
+    #exportSuccessModal > div,
+    #exportErrorModal > div {
+        max-width: 95vw !important;
+        padding: 24px 16px !important;
+    }
+}
+
+/* View Employee Modal Grid Responsiveness */
+@media (max-width: 768px) {
+    #viewEmployeeContent > div > div {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Bulk Schedule Employee List Responsiveness */
+@media (max-width: 640px) {
+    #employeeCheckboxList label {
+        padding: 10px !important;
+    }
+    
+    #employeeCheckboxList label > div > p:first-child {
+        font-size: 12px !important;
+    }
+    
+    #employeeCheckboxList label > div > p:last-child {
+        font-size: 10px !important;
+    }
+}
+
+/* Schedule Display Responsiveness */
+@media (max-width: 768px) {
+    #schedulesListContainer > div > div:last-child {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 640px) {
+    #schedulesListContainer > div {
+        padding: 12px !important;
+    }
+    
+    #schedulesListContainer > div > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    #schedulesListContainer > div > div:first-child > div:last-child {
+        width: 100% !important;
+        margin-top: 10px !important;
+    }
+    
+    #schedulesListContainer > div > div:first-child > div:last-child > button {
+        width: 100% !important;
+    }
+}

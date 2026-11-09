@@ -1,0 +1,141 @@
+/* ── Step indicator ── */
+.cert-steps {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px 0;
+    gap: 0;
+}
+.cert-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #b3b1c8;
+}
+.cert-step.active .cert-step-num {
+    background: var(--gp-pri);
+    color: #fff;
+}
+.cert-step.active .cert-step-label { color: var(--gp-pri); }
+.cert-step.done .cert-step-num {
+    background: #15803d;
+    color: #fff;
+}
+.cert-step.done .cert-step-label { color: #15803d; }
+.cert-step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--theme-neutral-200);
+    color: #9999bb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+}
+.cert-step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--theme-neutral-200);
+    margin: 0 10px;
+}
+/* ── Scan spinner ── */
+.cert-scan-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--theme-neutral-200);
+    border-top-color: var(--gp-pri);
+    border-radius: 50%;
+    animation: certSpin 0.8s linear infinite;
+    margin: 0 auto 12px;
+}
+@keyframes certSpin { to { transform: rotate(360deg); } }
+.cert-scan-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    margin: 0;
+}
+/* ── Auto-fill banner ── */
+.cert-autofill-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+.cert-autofill-success {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    color: #1b5e20;
+}
+.cert-autofill-warn {
+    background: #fff9e6;
+    border: 1px solid #ffe9a3;
+    color: #8b7500;
+}
+/* ── Auto-filled field highlight ── */
+.cert-autofilled {
+    border-color: #15803d !important;
+    background: #f0fdf4 !important;
+    box-shadow: 0 0 0 2px rgba(21,128,61,0.12) !important;
+}
+.cert-autofilled:focus {
+    border-color: var(--gp-pri) !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb),0.1) !important;
+}
+/* ── File preview in step 2 ── */
+.cert-file-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--theme-primary-soft);
+    border: 1.5px solid var(--theme-neutral-200);
+    border-radius: 8px;
+}
+
+/* ── "Add New Training" hero icon ──────────────────────────────────
+   The header keeps its original layout — icon in the left gutter, eyebrow,
+   title and sub-line beside it. The one thing that was actually broken is
+   fixed here: the icon had no background.
+
+   `.permanent-training .training-hero-icon` in employee.css never matched,
+   because the training modals are @include-d after </main> and so are
+   siblings of <main class="permanent-training">, never its descendants. The
+   SVG inside is stroke="#fff", so it was a white drawing on an unpainted
+   box — a blank 48px square where the icon should be. Same declaration as
+   the dead rule intended, scoped by overlay id like the rest of this file. */
+#addTrainingModal .training-hero-icon {
+    background: linear-gradient(135deg, var(--gp-pri), var(--gp-pri-2));
+}
+
+/* ── Toolbar primary action ────────────────────────────────────────
+   "Add New Training" was .modal-btn-primary — a *modal footer* class, on a
+   toolbar button, sitting beside an oblong "Export to PDS". Modal buttons
+   are deliberately rounded rectangles; toolbar actions are pills. It now
+   uses the same .btn-export pill as its neighbour and only takes over the
+   colours, matching how pass slips and travel orders do it.
+
+   Both selectors name .btn-export as well: `.glass-shell .btn-export` is
+   (0,2,0) and would otherwise repaint this translucent white, leaving a
+   white label on a white pill. */
+.permanent-training .tr-btn-primary-solid.btn-export {
+    background: var(--gp-pri);
+    color: #fff;
+    border-color: var(--gp-pri);
+}
+.permanent-training .tr-btn-primary-solid.btn-export:hover {
+    background: var(--gp-pri-2);
+    color: #fff;
+    border-color: var(--gp-pri-2);
+    transform: translateY(-1px);
+}

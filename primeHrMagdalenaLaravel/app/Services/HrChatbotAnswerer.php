@@ -1,0 +1,926 @@
+<?php
+
+namespace App\Services;
+
+use App\Exceptions\AiRateLimitException;
+use App\Models\MonetizationRequest;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * The HR chatbot "brain": text-to-SQL against the live schema, policy-question
+ * shortcuts, and bilingual narration. Extracted out of ChatbotController so both
+ * the session-backed floating widget and the DB-backed full-page AI Assistant
+ * call the exact same logic instead of maintaining two copies of this prompt
+ * engineering.
+ *
+ * This class is also the assistant's general-purpose fallback, which makes its
+ * SQL path a security boundary rather than a convenience: it is reached by
+ * questions that did not classify into any scoped capability. So the same two
+ * gates the dedicated text-to-SQL feature uses apply here as well —
+ * AiAccessPolicy decides whether generated SQL may run for this caller at all,
+ * and SafeSqlService validates every statement before it reaches the database.
+ * Callers without that permission still get the policy shortcuts and the
+ * knowledge-base answer, which is what most general questions want anyway.
+ */
+class HrChatbotAnswerer
+{
+    public function __construct(
+        private AiAccessPolicy $policy,
+        private SafeSqlService $safeSql,
+        private HrPolicyFactsService $facts,
+        private ?SchemaRelationshipService $relationships = null,
+        private ?CitizenCharterService $charter = null,
+        private ?AiScopeGuard $scope = null,
+    ) {
+        $this->relationships ??= new SchemaRelationshipService();
+        $this->charter ??= new CitizenCharterService();
+        $this->scope ??= new AiScopeGuard($this->charter);
+    }
+
+    /**
+     * Everything the model is told about how this system works.
+     *
+     * The computational half — conversion factors, the grace period, working
+     * hours, leave types and their limits, the LWOP formula — comes from
+     * HrPolicyFactsService, which reads the live config tables and the service
+     * constants. It used to be typed out here, and had already drifted: this
+     * constant listed 7 leave types where `leave_types_config` holds 20 active
+     * ones, so Bereavement, Forced, Solo Parent and ten others were invisible
+     * to every answer the assistant gave.
+     *
+     * Only the navigation guide below stays hard-coded, because menu paths are
+     * a property of the Blade views rather than of any table — there is nothing
+     * to read them from.
+     */
+    private function knowledge(?\App\Models\Employee $employee = null): string
+    {
+        return $this->facts->knowledgeBlock($employee) . "\n\n" . self::NAVIGATION_GUIDE;
+    }
+
+    private const NAVIGATION_GUIDE = <<<'TEXT'
+=== HOW-TO GUIDE — SYSTEM NAVIGATION ===
+
+   HOW TO FILE A LEAVE APPLICATION:
+   1. Go to Leave Management > File Leave Application
+   2. Select the Leave Type (VL, SL, SPL, ML, PL, VAWC, Solo Parent)
+   3. Choose the date range (From Date and To Date)
+   4. Enter the reason/remarks
+   5. Click Submit — status will be "Pending" until approved by admin
+   6. Admin approves or rejects under Leave Management > Leave Approvals
+   Note: You must have sufficient leave credits before filing VL or SL
+
+   HOW TO VIEW LEAVE BALANCE:
+   1. Go to Leave Management > Leave Balances
+   2. Select the employee and year to view available, used, and pending credits
+   3. Leave balances are broken down per leave type (VL, SL, SPL, etc.)
+
+   HOW TO RECORD ATTENDANCE (Admin):
+   1. Go to Attendance > Daily Time Record (DTR)
+   2. Select the employee and date
+   3. Enter AM In, AM Out, PM In, PM Out (and OT In/Out if applicable)
+   4. Save — the system auto-computes accredited hours and late minutes
+   Note: Employees may also use biometric/time-in devices if integrated
+
+   HOW TO VIEW ATTENDANCE RECORDS:
+   1. Go to Attendance > Attendance List or DTR Report
+   2. Filter by employee name, department, or date range
+   3. You can view individual DTR or generate a monthly summary
+
+   HOW TO ADD A NEW EMPLOYEE:
+   1. Go to Employees > Add Employee
+   2. Fill in personal info: first name, last name, birth date, sex, civil status, email
+   3. Fill in employment details: position/designation, department, employment status, salary grade, appointment date
+   4. Add government IDs: GSIS, PhilHealth, Pag-IBIG, TIN
+   5. Set up deductions under Employee Deductions
+   6. Create a user account under Users > Add User and link to the employee
+
+   HOW TO VIEW/EDIT EMPLOYEE PROFILE:
+   1. Go to Employees > Employee List
+   2. Search by name or employee ID
+   3. Click the employee to view or edit their profile, employment details, and government IDs
+
+   HOW TO VIEW PAYSLIP / SALARY COMPUTATION:
+   1. Go to Payroll > Salary Computations
+   2. Select the employee and payroll period
+   3. The payslip shows: basic pay, deductions (GSIS, PhilHealth, Pag-IBIG, loans), and net pay
+   4. Admins can generate and print payslips from this section
+
+   HOW TO MANAGE DEDUCTIONS:
+   1. Go to Employees > Employee Deductions
+   2. Select the employee
+   3. Add or update deductions: GSIS, PhilHealth, Pag-IBIG, and loan deductions
+   4. Deductions are automatically applied in the next payroll computation
+
+   HOW TO FILE A TRAVEL ORDER:
+   1. Go to Travel Orders > File Travel Order
+   2. Enter destination, purpose, date range, and transportation details
+   3. Submit for approval — status will be "Pending"
+   4. Admin approves under Travel Orders > Travel Order Approvals
+
+   HOW TO ADD A TRAINING RECORD:
+   1. Go to Trainings > Add Training
+   2. Enter training title, date, venue, and number of hours
+   3. Upload supporting documents if required
+   4. Admin can verify the training record after review
+
+   HOW TO MANAGE USER ACCOUNTS:
+   1. Go to Users > User List (or Personnel > Edit Employee)
+   2. Add a new user: enter username, password, role(s) (Employee/HR/Admin/Mayor), and link to employee record
+   3. An employee can hold multiple roles at once (e.g. HR + Mayor) via checkboxes in the Role / Access Level field
+   4. Activate or deactivate accounts under User Status
+   5. Roles control what modules the user can access; users with multiple roles choose which dashboard to use at login
+
+   HOW TO GENERATE REPORTS:
+   1. Go to Reports section
+   2. Available reports: Attendance Summary, Leave Summary, Payroll Report, DTR Report
+   3. Filter by department, date range, or individual employee
+   4. Export to PDF or print directly from the system
+
+Note: `users` is NOT queryable. Account status and roles live there, and the
+assistant is not permitted to read it — a query referencing it is rejected.
+
+The readable tables and their real columns are supplied separately, straight
+from the database schema. Never rely on a remembered column name — this system
+has several that differ from the obvious guess.
+TEXT;
+
+    /**
+     * Explain how something works, from curated policy and the knowledge base
+     * only — never from generated SQL.
+     *
+     * "How do I file a leave?" is a question about the system, not about the
+     * data in it, so there is nothing to query. Routing it here means every
+     * caller gets the same deterministic answer regardless of role, and the
+     * common case costs no model call at all.
+     *
+     * @param array<int, array{role: string, content: string}> $history
+     */
+    public function explain(?User $user, string $message, array $history = []): string
+    {
+        if (($refusal = $this->outOfScopeRefusal($message)) !== null) {
+            return $refusal;
+        }
+
+        try {
+            // A municipal "how do I" ("paano kumuha ng business permit") is a
+            // charter question wearing how-to phrasing — the HR navigation
+            // guide has nothing to say about it.
+            $charter = $this->charterAnswer($user, $message, $history);
+
+            return $charter
+                ?? $this->getPolicyAnswer(trim($message))
+                ?? $this->askDirectly($user, $message, $history);
+        } catch (AiRateLimitException $e) {
+            Log::warning('HR chatbot rate limited (explain)');
+            return $e->friendlyMessage();
+        }
+    }
+
+    /**
+     * Answer a single question given the conversation so far.
+     *
+     * @param array<int, array{role: string, content: string}> $history
+     */
+    public function answer(?User $user, string $message, array $history = []): string
+    {
+        if (($refusal = $this->outOfScopeRefusal($message)) !== null) {
+            return $refusal;
+        }
+
+        try {
+            return $this->answerInternal($user, $message, $history);
+        } catch (AiRateLimitException $e) {
+            Log::warning('HR chatbot rate limited');
+            return $e->friendlyMessage();
+        }
+    }
+
+    /**
+     * The question is about something other than this HRIS, the municipality,
+     * or this system — so the answer is the boundary, not an attempt.
+     *
+     * This class is reached two ways that never pass through `AiQueryService`:
+     * the public welcome-page widget calls `answer(null, …)` directly, and the
+     * orchestrator itself falls back here for `how_to` and for a general
+     * question no rule claimed. It is also the assistant's free-text answerer,
+     * which is where the off-topic answers actually came from — "answer this
+     * question using the system knowledge below" was an instruction to answer
+     * *anything* it was handed. The gate therefore lives on both public doors
+     * rather than on one of them.
+     */
+    private function outOfScopeRefusal(string $message): ?string
+    {
+        return $this->scope->isOutOfScope($message) ? $this->scope->refusal() : null;
+    }
+
+    /**
+     * @param array<int, array{role: string, content: string}> $history
+     */
+    private function answerInternal(?User $user, string $message, array $history = []): string
+    {
+        $message = trim($message);
+
+        $shortcut = $this->shortcutAnswer($message);
+
+        if ($shortcut !== null) {
+            return $shortcut;
+        }
+
+        // The charter is public municipal information, answered for every
+        // caller — including the logged-out public widget, which reaches here
+        // with a null user and can never run generated SQL. Checked before the
+        // permission gate so a guest asking about permits is not answered with
+        // the knowledge base's HR-only content.
+        $charter = $this->charterAnswer($user, $message, $history);
+
+        if ($charter !== null) {
+            return $charter;
+        }
+
+        // Generated SQL joins arbitrary tables, so it cannot be scoped to one
+        // employee's own rows after the fact — the same reason
+        // canRunGeneratedSql() restricts the dedicated feature to org-wide
+        // roles. Everyone else is answered from the knowledge base instead of
+        // being handed an unscoped query over the whole database.
+        if ($user === null || !$this->policy->canRunGeneratedSql($user)) {
+            return $this->askDirectly($user, $message, $history);
+        }
+
+        // Get DB schema
+        $schema = $this->getDbSchema();
+
+        // Ask the LLM to generate SQL
+        $sql = $this->generateSql($user, $message, $schema, $history);
+
+        if (!$sql) {
+            return $this->askDirectly($user, $message, $history);
+        }
+
+        // "Starts with SELECT" is not a safety check: it passes a statement
+        // that unions in `users`, hides a keyword in an executable comment, or
+        // returns the entire table. Run the real validator.
+        $verdict = $this->safeSql->validate($sql);
+
+        if (!$verdict['safe']) {
+            Log::channel('ai_audit')->warning('chatbot.sql_rejected', [
+                'user_id' => $user->id,
+                'reason' => $verdict['reason'],
+                'sql' => $sql,
+            ]);
+
+            return $this->askDirectly($user, $message, $history);
+        }
+
+        // Execute SQL
+        try {
+            $results = DB::select($this->safeSql->enforceRowCap($sql));
+        } catch (\Throwable $e) {
+            Log::error('Chatbot SQL error: ' . $e->getMessage() . ' | SQL: ' . $sql);
+            return $this->askDirectly($user, $message, $history);
+        }
+
+        return $this->narrateResults($user, $message, $sql, $results, $history);
+    }
+
+    /**
+     * Answer from the imported Citizen's Charter, or null when this is not a
+     * charter question or the stored text matches none of its words. Null
+     * means "not mine to answer" — the caller continues down its own path —
+     * which is what keeps a missing import from changing any existing answer.
+     *
+     * @param array<int, array{role: string, content: string}> $history
+     */
+    private function charterAnswer(?User $user, string $message, array $history): ?string
+    {
+        if (!$this->charter->looksLikeCharterQuestion($message)) {
+            return null;
+        }
+
+        return $this->charter->answer($user, $message, $history)['answer'] ?? null;
+    }
+
+    /**
+     * The answers that need neither a query nor a model: a greeting, and the
+     * curated policy shortcuts.
+     *
+     * Public because the orchestrator consults it before deciding to write SQL
+     * for an unclassified question. "Hello" and "what is the grace period" must
+     * not become a text-to-SQL attempt — one has nothing to query and the other
+     * is answered from HrPolicyFactsService, exactly, for free.
+     */
+    public function shortcutAnswer(string $message): ?string
+    {
+        $message = trim($message);
+
+        if (preg_match('/^(hi|hello|hey|good\s+(morning|afternoon|evening)|kumusta|kamusta)\b/i', $message)
+            && str_word_count($message) <= 6) {
+            return "Hello! I'm your HRIS Assistant. I can answer questions about employees, "
+                . 'attendance, leave balances, government IDs, deductions, payroll, and HR policies. '
+                . 'What would you like to know?';
+        }
+
+        return $this->getPolicyAnswer($message);
+    }
+
+    private function formatHistory(array $history): string
+    {
+        if (empty($history)) {
+            return '(This is the start of the conversation — no previous messages.)';
+        }
+
+        $lines = [];
+        foreach ($history as $turn) {
+            $speaker  = $turn['role'] === 'user' ? 'User' : 'Assistant';
+            $lines[] = "{$speaker}: {$turn['content']}";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Describe only the tables the assistant is allowed to read.
+     *
+     * This used to walk `SHOW TABLES` and describe everything, which put
+     * `users`, `personal_access_tokens`, `sessions`, and `password_reset_tokens`
+     * into the prompt — tables SafeSqlService deliberately excludes, sent to a
+     * third-party model on every question. Describing only the allow-list means
+     * the model never learns those tables exist, so it cannot be talked into
+     * referencing one.
+     */
+    private function getDbSchema(): string
+    {
+        $schema = '';
+
+        foreach (SafeSqlService::allowedTables() as $table) {
+            try {
+                $columns = DB::select("DESCRIBE `{$table}`");
+            } catch (\Throwable) {
+                continue; // Table not present in this deployment.
+            }
+
+            $cols = implode(', ', array_map(function ($c) { return "{$c->Field} ({$c->Type})"; }, $columns));
+            $schema .= "Table `{$table}`: {$cols}\n";
+        }
+
+        // The declared foreign keys. This path is the assistant's catch-all, so
+        // it writes SQL for the questions no capability claimed — exactly the
+        // ones least likely to follow an obvious join. It had no relationship
+        // information at all: a column listing, and the model left to infer
+        // that `attendance.employee_id` points at `employees.id` rather than at
+        // `employees.employee_id`, which is a different column holding a
+        // different value.
+        $joins = $this->relationships->describeFor(SafeSqlService::allowedTables());
+
+        if ($joins !== '') {
+            $schema .= "\nDeclared foreign keys (use these for JOINs; do not invent one):\n{$joins}\n";
+        }
+
+        return $schema;
+    }
+
+    private function generateSql(?User $user, string $question, string $schema, array $history = []): ?string
+    {
+        $knowledge   = $this->knowledge();
+        $today       = now()->toDateString();       // e.g. 2026-07-04
+        $yesterday   = now()->subDay()->toDateString();
+        $tomorrow    = now()->addDay()->toDateString();
+        $thisMonth   = now()->format('Y-m');         // e.g. 2026-07
+        $conversation = $this->formatHistory($history);
+
+        $prompt = <<<PROMPT
+You are a MySQL expert for the HRIS system of the Municipality of Pagsanjan. Generate a valid MySQL SELECT query to answer the user's question.
+
+SYSTEM KNOWLEDGE:
+{$knowledge}
+
+Database Schema:
+{$schema}
+
+CONVERSATION SO FAR (use this to resolve pronouns like "siya"/"he"/"her" and follow-up references to a previously mentioned employee, date, or topic):
+{$conversation}
+
+CRITICAL RULES — follow exactly:
+- Only generate SELECT queries, never INSERT, UPDATE, DELETE, or DROP
+- Return ONLY the raw SQL query — no explanation, no markdown, no backticks
+- Use JOINs when data spans multiple tables (e.g. employee name + government_ids)
+- For employee name searches always use LIKE on BOTH first_name AND last_name
+- If the question refers back to someone/something from the conversation above (e.g. "him", "her", "siya", "that employee"), resolve it using the conversation history instead of returning CANNOT_ANSWER
+- If the question cannot be answered from the schema, return: CANNOT_ANSWER
+- If the question is not about this municipality's HR data, leave, attendance, payroll, employees, documents, or this system — for example anything about programming, code, mathematics, or general knowledge — return: CANNOT_ANSWER
+- "today" means date = '{$today}'
+- "yesterday" or "kahapon" means date = '{$yesterday}'
+- "tomorrow" or "bukas" means date = '{$tomorrow}'
+- "this month" means date LIKE '{$thisMonth}%'
+- am_in, am_out, pm_in, pm_out are VARCHAR time strings (e.g. '07:45:00') — compare as strings
+- "early bird" or "earliest" means smallest (earliest) am_in value where am_in IS NOT NULL AND am_in != ''
+- "top 5 early birds today" example SQL:
+  SELECT e.first_name, e.last_name, a.am_in FROM attendance a
+  JOIN employees e ON e.id = a.employee_id
+  WHERE a.date = '{$today}' AND a.am_in IS NOT NULL AND a.am_in != ''
+  ORDER BY a.am_in ASC LIMIT 5
+- "who was late" means am_in > '08:05:00'
+- "absent today" means employees with no attendance row for date = '{$today}'
+
+LATE MINUTES COMPUTATION IN SQL:
+- AM late minutes: GREATEST(0, TIME_TO_SEC(am_in)/60 - 485) when am_in IS NOT NULL AND am_in > '08:05:00', else 0
+- PM late minutes: GREATEST(0, TIME_TO_SEC(pm_in)/60 - 785) when pm_in IS NOT NULL AND pm_in > '13:05:00', else 0
+- Total late minutes expression:
+  (CASE WHEN am_in > '08:05:00' THEN GREATEST(0, TIME_TO_SEC(am_in)/60 - 485) ELSE 0 END +
+   CASE WHEN pm_in > '13:05:00' THEN GREATEST(0, TIME_TO_SEC(pm_in)/60 - 785) ELSE 0 END)
+- VL deduction in days: total_late_minutes / 480
+- LWOP days (when VL=0 and SL=0): total_late_minutes / 480
+- Salary deduction from LWOP: (monthly_rate / 22) * lwop_days — join designations for monthly_rate
+- For "late deduction" or "VL deducted" queries, always SELECT: employee name, am_in, pm_in, total late minutes, VL deduction (days), and available VL credits
+- For "LWOP" queries, also include: SL credits, LWOP days, and estimated salary deduction
+
+User Question: {$question}
+
+SQL Query:
+PROMPT;
+
+        $content = $this->callAi($user, $prompt, 0.1, 400);
+
+        if (!$content || str_contains(strtoupper($content), 'CANNOT_ANSWER')) {
+            return null;
+        }
+
+        // Strip any accidental markdown fences
+        $content = preg_replace('/```[a-z]*\n?/i', '', $content);
+        $content = trim($content, "`\n ");
+
+        return $content;
+    }
+
+    private function narrateResults(?User $user, string $question, string $sql, array $results, array $history = []): string
+    {
+        $knowledge = $this->knowledge();
+        $preview = count($results) > 0
+            ? json_encode(array_slice($results, 0, 10), JSON_PRETTY_PRINT)
+            : 'No results found';
+
+        $total        = count($results);
+        $conversation = $this->formatHistory($history);
+
+        $prompt = <<<PROMPT
+You are a friendly HR assistant for the HRIS system of the Municipality of Pagsanjan. A user asked a question, a SQL query was run, and here are the results. Answer naturally and conversationally, as a continuation of the ongoing chat below — don't reintroduce yourself or restate things already established in the conversation.
+
+SYSTEM KNOWLEDGE:
+{$knowledge}
+
+CONVERSATION SO FAR:
+{$conversation}
+
+Latest User Question: {$question}
+SQL Query Used: {$sql}
+Query Results (first 10): {$preview}
+Total Records Found: {$total}
+
+Instructions:
+- Answer in a friendly, concise tone (3-5 sentences max), like you're picking up the conversation naturally
+- Never dump raw field names or key/value pairs — turn the data into a natural sentence (e.g. "Jeremy clocked in at 8:11 AM yesterday, about 6.5 minutes late")
+- If no results, say so politely and suggest checking the spelling or name
+- All monetary amounts in Philippine Peso (PHP), never use dollar signs
+- Match the user's language (Tagalog or English) and mirror the tone of the conversation so far
+- Never expose raw SQL to the user
+- If the question involves late deductions or leave computation, explain the math step-by-step:
+    * How many minutes late (AM and/or PM)
+    * How many VL days were deducted (late_minutes / 480)
+    * Whether SL was used after VL was exhausted
+    * Whether any LWOP applies and how much salary is affected
+    * Use plain language: e.g. "30 minutes late = 0.0625 VL day deducted"
+- If the result shows LWOP, always mention the estimated salary deduction in PHP
+- If the result shows leave balances, mention remaining VL and SL credits after deduction
+PROMPT;
+
+        return $this->callAi($user, $prompt, 0.7, 400) ?? $this->buildFallbackNarration($results);
+    }
+
+    private function askDirectly(?User $user, string $question, array $history = []): string
+    {
+        $knowledge    = $this->knowledge();
+        $conversation = $this->formatHistory($history);
+
+        $prompt = <<<PROMPT
+You are an HR assistant for the HRIS system of the Municipality of Pagsanjan. Answer this question using the system knowledge below.
+
+{$knowledge}
+
+CONVERSATION SO FAR (continue naturally from this, resolving any pronouns or follow-up references):
+{$conversation}
+
+Latest User Question: {$question}
+
+NEVER INVENT THIS MUNICIPALITY'S OWN RECORDS. The department names, job
+designations, position titles, salary rates, employee names and office rosters
+of Pagsanjan exist only in its database, and none of them appear above. You do
+not know them. If the question asks for any of those, do not answer it from
+general knowledge of how Philippine LGUs are usually structured — say plainly
+that you need to look it up in the records, and invite the user to ask again so
+it can be retrieved. A plausible-sounding list of job titles that does not match
+the plantilla is worse than no answer: it is indistinguishable from a real one.
+
+ANSWER ONLY WITHIN YOUR SCOPE. Your scope is this municipality's HR records and
+HR policies, the municipality's own services, and how this system is used. If the
+question is about anything else — programming or code in any language,
+mathematics, general knowledge, or any other off-topic subject — do not answer
+it, not even partly: say that it is outside what you can help with and invite an
+in-scope question instead. The system knowledge above is background for the HR
+questions you are asked, never material for a different subject.
+
+Provide a clear, friendly answer in 2-4 sentences. Match the user's language (Tagalog or English) and don't repeat introductions already made earlier in the conversation.
+PROMPT;
+
+        return $this->callAi($user, $prompt, 0.7, 500)
+            ?? $this->degradedAnswer($user, $question);
+    }
+
+    /**
+     * What to say when the narration model is unreachable.
+     *
+     * The previous text — "the AI chat provider … appears to be unavailable or
+     * not configured (Settings → AI/Chatbot)" — was the assistant's single most
+     * common answer during a provider outage, and it had three faults. It
+     * conflated a rejected key with an absent one, so an admin looking at a
+     * populated Settings page had no reason to suspect the key. It showed
+     * plumbing to employees, who cannot act on it. And it answered *nothing*,
+     * even for questions the system can answer perfectly well on its own.
+     *
+     * So: answer from the facts first and only then explain the degradation,
+     * scaled to what the reader can do about it.
+     */
+    private function degradedAnswer(?User $user, string $question): string
+    {
+        // The rulebook does not need a model. getPolicyAnswer() is normally
+        // consulted before we ever reach a prompt, but explain() and the SQL
+        // paths can arrive here having skipped it.
+        $policy = $this->getPolicyAnswer($question);
+
+        if ($policy !== null) {
+            return $policy;
+        }
+
+        $isAdmin = $user?->hasRole('admin') ?? false;
+        $failure = AiChatService::lastFailure();
+
+        if ($isAdmin && $failure === AiChatService::FAILURE_REJECTED) {
+            return "I can't phrase a free-text answer right now: **the AI provider rejected the configured "
+                . "API key** (HTTP 401). The key is present but not valid — it has most likely been revoked, "
+                . "regenerated, or pasted incomplete.\n\n"
+                . "Fix it under **Settings → AI/Chatbot**, or in `GROQ_API_KEY` in `.env`. Until then I can "
+                . 'still answer anything that comes from the database or the HR rulebook — leave types, '
+                . 'accrual, grace period, LWOP, employee lookups, counts, reports, and charts all work '
+                . 'without the provider.';
+        }
+
+        if ($isAdmin && $failure === AiChatService::FAILURE_UNCONFIGURED) {
+            return "No AI provider is configured, so I can't phrase free-text answers. Add a provider and "
+                . 'key under **Settings → AI/Chatbot**. Everything that reads from the database or the HR '
+                . 'rulebook still works without it.';
+        }
+
+        // Everyone else gets the capability, not the cause. An employee can do
+        // nothing with an HTTP status, and naming the provider invites them to
+        // report an outage they cannot verify.
+        return "I can't put an answer to that in my own words at the moment, but I can still look things up "
+            . "directly.\n\n"
+            . "Try asking about your **leave balance**, **payslip**, **attendance**, **training**, or "
+            . '**travel orders**, or about how a process works — filing leave, the grace period, how late '
+            . 'deductions are computed, or what leave types exist. Those come straight from your records '
+            . 'and the HR rules, so they work regardless.';
+    }
+
+    /**
+     * The leave types this system is actually configured with.
+     *
+     * Previously a hand-written list of seven. `leave_types_config` holds 20
+     * active rows, so Bereavement, Forced, Adoption, Study, Terminal, Wellness
+     * and seven others were answered as though they did not exist.
+     */
+    private function leaveTypesAnswer(): string
+    {
+        $types = $this->facts->facts()['leave_types'];
+
+        if (empty($types)) {
+            return 'I could not read the leave type configuration just now, so I would rather not list '
+                . 'leave types from memory. Please try again shortly.';
+        }
+
+        $count = count($types);
+        $lines = ["**Leave types configured in HRIS ({$count}):**"];
+
+        foreach ($types as $t) {
+            $notes = [];
+
+            if ($t['annual_limit'] > 0) {
+                $notes[] = $this->trimNumber($t['annual_limit']) . ' day(s)/year';
+            }
+
+            if ($t['accrual_per_month'] !== null) {
+                $notes[] = 'accrues ' . $this->trimNumber($t['accrual_per_month']) . '/month';
+            }
+
+            if ($t['cumulative']) {
+                $notes[] = 'carries over';
+            }
+
+            if ($t['monetizable']) {
+                $notes[] = 'monetizable';
+            }
+
+            if ($t['requires_attachment']) {
+                $notes[] = 'needs an attachment';
+            }
+
+            $lines[] = "- **{$t['code']}** ({$t['name']})" . ($notes ? ' — ' . implode(', ', $notes) : '');
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Accrual described from `leave_accrual_rates`, not from memory.
+     */
+    private function accrualAnswer(): string
+    {
+        $accrued = array_filter(
+            $this->facts->facts()['leave_types'],
+            fn (array $t) => $t['accrual_per_month'] !== null
+        );
+
+        if (empty($accrued)) {
+            return 'No leave type is currently configured with a monthly accrual rate in this system.';
+        }
+
+        $lines = ['**How leave credits are earned:**'];
+
+        foreach ($accrued as $t) {
+            $bits = ['**' . $this->trimNumber($t['accrual_per_month']) . ' day(s) per month**'];
+
+            if ($t['annual_limit'] > 0) {
+                $bits[] = 'up to ' . $this->trimNumber($t['annual_limit']) . '/year';
+            }
+
+            $bits[] = $t['cumulative'] ? 'carries over year to year' : 'does not carry over';
+
+            if ($t['monetizable']) {
+                $bits[] = 'monetizable';
+            }
+
+            $lines[] = "- **{$t['code']}** ({$t['name']}) — " . implode(', ', $bits);
+        }
+
+        $lines[] = '';
+        $lines[] = 'Every other leave type is granted per entitlement rather than accrued.';
+
+        return implode("\n", $lines);
+    }
+
+    /** 15.00 → "15", 1.2500 → "1.25". */
+    private function trimNumber(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.');
+    }
+
+    private function getPolicyAnswer(string $question): ?string
+    {
+        $q = strtolower($question);
+
+        // Every figure below is read from HrPolicyFactsService rather than
+        // written into the sentence. These shortcuts are the answers that never
+        // reach a model, so a stale number here is quoted verbatim to the user
+        // with no chance of the surrounding data contradicting it.
+        $f = $this->facts->facts();
+        $minutesPerDay = $f['conversion']['minutes_per_day'];
+        $perMonth = $f['payroll']['working_days_per_month'];
+        $order = $f['payroll']['deduction_order'];
+        $orderText = implode('**, then **', $order);
+
+        if (preg_match('/\b(grace\s*period)\b/', $q)) {
+            $g = $f['attendance']['grace_minutes'];
+
+            return "The grace period is **{$g} minute(s)** after AM In and after PM In. "
+                . 'Clocking in within that window is not counted as late. '
+                . 'Your exact start times come from your assigned schedule.';
+        }
+        if (preg_match('/\blwop\b/', $q) && !preg_match('/\b(who|which|employee|list|show|how many)\b/', $q)) {
+            return '**LWOP (Leave Without Pay)** is applied when late or undertime exceeds your available **'
+                . implode('** and **', $order) . "** credits. The uncovered minutes are converted to days "
+                . "(÷{$minutesPerDay}) and deducted from salary: **(monthly rate ÷ {$perMonth}) × LWOP days**.";
+        }
+        if (preg_match('/\b(working hours?|oras ng trabaho)\b/', $q)) {
+            $s = $this->facts->scheduleFor(null);
+            $h = $f['conversion']['hours_per_day'];
+
+            return "Working hours are **AM {$s['am_in']}–{$s['am_out']}** and **PM {$s['pm_in']}–{$s['pm_out']}** "
+                . "({$h} hours total) on the {$s['source']}. Schedules are assigned per employee, so check "
+                . 'your own if it differs.';
+        }
+        if (preg_match('/\b(how.*(late.*deduct|deduct.*late)|late.*comput|comput.*late|late.*vl|vl.*late)\b/', $q)) {
+            $g = $f['attendance']['grace_minutes'];
+
+            return implode("\n", [
+                '**How Late Deductions Work in HRIS:**',
+                "1. Late minutes are counted from your scheduled AM In / PM In, after a **{$g}-minute** grace period.",
+                "2. Total late minutes ÷ {$minutesPerDay} = the fraction of a day to deduct.",
+                "3. Deducted from **{$orderText}**, in that order.",
+                '4. Anything those credits cannot cover becomes **LWOP**.',
+                "5. LWOP salary deduction = **(monthly rate ÷ {$perMonth}) × LWOP days**",
+                '',
+                'Ask "how much leave did my late cost?" and I will compute it from your own records '
+                    . 'rather than from an example.',
+            ]);
+        }
+        if (preg_match('/\b(how.*(vl|vacation leave).*(accru|earn|comput)|vl.*(accru|earn)|leave.*(accru|earn))\b/', $q)) {
+            return $this->accrualAnswer();
+        }
+        if (preg_match('/\b(leave types?|kinds? of leave|uri ng leave|anong leave)\b/', $q)) {
+            return $this->leaveTypesAnswer();
+        }
+        if (preg_match('/\b(how.*(file|apply|submit).*(leave|vl|sl|vacation|sick)|mag.*file.*leave|pano.*mag.*leave)\b/', $q)) {
+            return implode("\n", [
+                '**How to File a Leave Application:**',
+                '1. Go to **Leave Management > File Leave Application**',
+                '2. Select the Leave Type (VL, SL, SPL, ML, PL, VAWC, Solo Parent)',
+                '3. Choose your date range and enter your reason/remarks',
+                '4. Click **Submit** — status will be "Pending" until approved by admin',
+                '',
+                '> Make sure you have enough leave credits before filing VL or SL.',
+            ]);
+        }
+        if (preg_match('/\b(how.*(record|log|enter|add).*(attendance|time|dtr)|pano.*attendance|mag.*time.*in)\b/', $q)) {
+            return implode("\n", [
+                '**How to Record Attendance:**',
+                '1. Go to **Attendance > Daily Time Record (DTR)**',
+                '2. Select the employee and date',
+                '3. Enter **AM In, AM Out, PM In, PM Out** (and OT if applicable)',
+                '4. Save — the system auto-computes accredited hours and late minutes',
+            ]);
+        }
+        if (preg_match('/\b(how.*(add|create|register|enroll).*(employee|empleyado)|pano.*mag.*add.*employee)\b/', $q)) {
+            return implode("\n", [
+                '**How to Add a New Employee:**',
+                '1. Go to **Employees > Add Employee**',
+                '2. Fill in personal info: name, birth date, sex, civil status, email',
+                '3. Fill in employment details: position, department, salary grade, appointment date',
+                '4. Add government IDs: GSIS, PhilHealth, Pag-IBIG, TIN',
+                '5. Set up deductions under **Employee Deductions**',
+                '6. Create a user account under **Users > Add User** and link to the employee',
+            ]);
+        }
+        if (preg_match('/\b(how.*(view|check|see|open).*(payslip|salary|payroll)|pano.*payslip|saan.*payslip)\b/', $q)) {
+            return implode("\n", [
+                '**How to View Payslip / Salary Computation:**',
+                '1. Go to **Payroll > Salary Computations**',
+                '2. Select the employee and payroll period',
+                '3. The payslip shows: basic pay, deductions (GSIS, PhilHealth, Pag-IBIG, loans), and net pay',
+                '4. You can print the payslip directly from this section',
+            ]);
+        }
+        if (preg_match('/\b(how.*(file|apply|submit).*(travel|travel order)|pano.*travel order)\b/', $q)) {
+            return implode("\n", [
+                '**How to File a Travel Order:**',
+                '1. Go to **Travel Orders > File Travel Order**',
+                '2. Enter destination, purpose, date range, and transportation details',
+                '3. Submit — status will be "Pending" until approved by admin',
+            ]);
+        }
+        if (preg_match('/\b(how.*(add|record|enter).*(training|seminar)|pano.*training)\b/', $q)) {
+            return implode("\n", [
+                '**How to Add a Training Record:**',
+                '1. Go to **Trainings > Add Training**',
+                '2. Enter training title, date, venue, and number of hours',
+                '3. Upload supporting documents if required',
+                '4. Admin can verify the training record after review',
+            ]);
+        }
+        if (preg_match('/\b(how.*(view|check).*(leave balance|leave credit)|pano.*leave balance)\b/', $q)) {
+            return implode("\n", [
+                '**How to View Leave Balance:**',
+                '1. Go to **Leave Management > Leave Balances**',
+                '2. Select the employee and year',
+                '3. You will see available, used, and pending credits per leave type',
+            ]);
+        }
+        if (preg_match('/\b(absent.*deduct|deduct.*absent|no.*show|nawala)\b/', $q)) {
+            return '**Absent without leave** = 1 full LWOP day. Salary deduction = '
+                . "**(monthly rate ÷ {$perMonth}) × 1**. Filing a leave application against available **"
+                . implode('**/**', $order) . '** credits covers the absence and avoids LWOP.';
+        }
+        if ($this->isMonetizationRuleQuestion($q)) {
+            return $this->monetizationAnswer();
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether the question asks how monetization *works* rather than for a
+     * request record. Record phrasings ("my monetization status", "list
+     * pending requests", "how many") are excluded so they keep flowing to
+     * self-service or generated SQL — answering those from the rulebook would
+     * state policy where the user asked for their own row.
+     */
+    private function isMonetizationRuleQuestion(string $q): bool
+    {
+        if (!preg_match('/\bmonetiz\w*\b/', $q)) {
+            return false;
+        }
+
+        // "request" itself is deliberately not a record marker: "how do I file a
+        // monetization request" is the canonical rule question, and every
+        // genuine record phrasing ("my requests", "list requests", "request
+        // status") already carries one of the markers above.
+        if (preg_match('/\b(status|balance|balances|show|list|display|history|how many|count|who|which|pending|approved|my|mine|aking|akin|ko)\b/', $q)) {
+            return false;
+        }
+
+        return (bool) preg_match('/\b(can|how|what|eligible|eligib|qualif|require|process|policy|rule|mean|file|apply|convert|cash|formula|comput\w+|work)\b/', $q);
+    }
+
+    /**
+     * How leave monetization works, from the live config and the model's own
+     * formula — never a remembered constant or a guessed procedure.
+     */
+    private function monetizationAnswer(): string
+    {
+        $m = $this->facts->monetization();
+
+        if (empty($m['codes'])) {
+            return 'I could not read the monetization configuration just now, so I would rather not '
+                . 'describe the rules from memory. Please try again shortly.';
+        }
+
+        $codes = implode(' and ', $m['codes']);
+        $cf = rtrim(rtrim(number_format($m['constant_factor'], 7, '.', ''), '0'), '.');
+
+        $lines = [
+            "**Monetization** converts {$codes} credits to cash. You file under **Leave & Benefits > "
+                . 'My Monetization** (**+ Request Monetization**), stating how many VL and SL days to '
+                . 'convert and why; the request waits as **pending** until HR decides.',
+            "Amount = **monthly salary × monetized days × {$cf}** — the system stores it on the request, "
+                . 'so the figure on your row is the figure you are paid.',
+            'Approval deducts the monetized days from your leave balances; a disapproved request '
+                . 'deducts nothing and carries the reason. You may cancel your own request while it is '
+                . 'still pending, and only an approved request can be printed.',
+        ];
+
+        if (!empty($m['statuses'])) {
+            $lines[] = 'A request is always one of: **' . implode('**, **', $m['statuses']) . '** '
+                . '(shown as Disapproved on screen for a refused one).';
+        }
+
+        $lines[] = '';
+        $lines[] = 'Ask "what is the status of my monetization request?" and I will look up your own rows.';
+
+        return implode("\n", $lines);
+    }
+
+    private function callAi(?User $user, string $prompt, float $temperature, int $maxTokens): ?string
+    {
+        return AiChatService::complete($user, $prompt, $temperature, $maxTokens);
+    }
+
+    /**
+     * Narrate query results without a model.
+     *
+     * This used to render the first row and drop the rest — "I found 24
+     * matching records — here's the first one". The query had already done the
+     * work and the rows were already in memory, so 23 answers were discarded to
+     * save nothing. During a provider outage this is the *only* thing standing
+     * between a correct query and a useless reply, so it lists what it found.
+     */
+    private function buildFallbackNarration(array $results): string
+    {
+        if (empty($results)) {
+            return "I couldn't find any matching records for that. Could you double-check the name or details and try again?";
+        }
+
+        $total = count($results);
+        $shown = array_slice($results, 0, 15);
+
+        $lines = array_map(function ($row) {
+            $parts = [];
+
+            foreach ((array) $row as $key => $value) {
+                $label = ucwords(str_replace('_', ' ', $key));
+                $parts[] = "{$label}: " . ($value === null || $value === '' ? '—' : $value);
+            }
+
+            return '- ' . implode(' · ', $parts);
+        }, $shown);
+
+        $intro = $total === 1
+            ? "Here's what I found:"
+            : "I found **{$total}** matching record(s):";
+
+        $out = $intro . "\n\n" . implode("\n", $lines);
+
+        if ($total > count($shown)) {
+            $out .= "\n\n_Showing the first " . count($shown) . " of {$total}._";
+        }
+
+        return $out;
+    }
+}

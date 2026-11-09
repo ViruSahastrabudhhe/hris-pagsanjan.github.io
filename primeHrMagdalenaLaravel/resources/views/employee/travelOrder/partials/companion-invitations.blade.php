@@ -1,0 +1,142 @@
+{{-- Companion Invitations: travel orders where this employee is invited as a companion --}}
+@if(isset($companionInvitations) && $companionInvitations->isNotEmpty())
+<section class="table-section to-mb-24" id="companion-invitations-section">
+    <div class="table-header">
+        <div>
+            <h3 class="table-title to-flex-gap-8">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b044d" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Companion Requests
+                @php $pendingInvites = $companionInvitations->where('status', 'pending')->count(); @endphp
+                @if($pendingInvites > 0)
+                    <span class="to-pill-amber">{{ $pendingInvites }} pending</span>
+                @endif
+            </h3>
+            <p class="table-sub">Travel orders where you were included as a companion</p>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="payroll-table">
+            <thead>
+                <tr>
+                    <th>Order No.</th>
+                    <th>Filed By</th>
+                    <th>Destination</th>
+                    <th>Travel Date</th>
+                    <th class="to-ta-center">Your Response</th>
+                    <th class="to-ta-center row-menu-head">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($companionInvitations as $invitation)
+                @php
+                    $inviteOrder = $invitation->travelOrder;
+                    // Everything the accept/decline confirmation needs to name
+                    // *this* trip rather than ask about "a companion request".
+                    // Assembled once per row and handed to the buttons below as
+                    // data attributes, so the dialog never has to fetch it.
+                    $inviteFiler = $inviteOrder?->employee;
+                    $inviteFilerName = trim(($inviteFiler->first_name ?? '') . ' ' . ($inviteFiler->last_name ?? '')) ?: 'the filer';
+                    $inviteFirstName = $inviteFiler->first_name ?? 'the filer';
+                    $inviteInitials = strtoupper(substr($inviteFiler->first_name ?? 'E', 0, 1) . substr($inviteFiler->last_name ?? 'E', 0, 1));
+                    $invitePhoto = $inviteFiler?->photo
+                        ? (\Illuminate\Support\Str::startsWith($inviteFiler->photo, ['/', 'http']) ? $inviteFiler->photo : asset('storage/' . $inviteFiler->photo))
+                        : '';
+                    $inviteParty = 1 + ($inviteOrder?->companions->count() ?? 0);
+                @endphp
+                @if($inviteOrder)
+                <tr>
+                    <td data-label="Order No." class="to-td-bold">{{ $inviteOrder->order_number }}</td>
+                    <td data-label="Filed By" class="to-td-semibold">
+                        <div class="to-flex-gap-10">
+                            @include('partials.travel-party-avatars', ['order' => $inviteOrder])
+                            {{ $inviteOrder->employee->first_name ?? '' }} {{ $inviteOrder->employee->last_name ?? '' }}
+                        </div>
+                    </td>
+                    <td data-label="Destination" class="to-td-muted">{{ $inviteOrder->destination }}</td>
+                    <td data-label="Travel Date" class="to-td-semibold">{{ $inviteOrder->formatted_dates }}</td>
+                    <td data-label="Your Response" class="to-ta-center">
+                        @if($invitation->status === 'pending')
+                            <span class="badge-status pending">Pending</span>
+                        @elseif($invitation->status === 'accepted')
+                            <span class="badge-status processed">Accepted</span>
+                        @else
+                            <span class="badge-status on-hold">Rejected</span>
+                        @endif
+                    </td>
+                    <td data-label="Actions" class="row-menu-cell">
+                        <button type="button" class="row-menu-btn" data-menu="companionRowMenu{{ $inviteOrder->id }}"
+                                onclick="toggleRowMenu(event)" aria-haspopup="menu" aria-expanded="false"
+                                title="Actions" aria-label="Actions for the invitation to {{ $inviteOrder->destination }}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                            </svg>
+                        </button>
+                        <div class="row-menu" id="companionRowMenu{{ $inviteOrder->id }}" role="menu" aria-label="Invitation actions">
+                            <button type="button" role="menuitem" class="row-menu-item"
+                                    onclick="closeRowMenu(); viewTravelOrder({{ $inviteOrder->id }})">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                View details
+                            </button>
+                            @if($invitation->status === 'pending' && $inviteOrder->status === 'awaiting_companions')
+                                <div class="row-menu-sep"></div>
+                                {{-- Both buttons carry the same trip context. The
+                                     confirmation reads it off whichever one was
+                                     pressed, so it can say "Travel with Maria to
+                                     Lucena City?" instead of "Are you sure?" --}}
+                                <button type="button" role="menuitem" class="row-menu-item is-accept"
+                                        onclick="closeRowMenu(); openCompanionResponse(this)"
+                                        data-response="accepted"
+                                        data-order-id="{{ $inviteOrder->id }}"
+                                        data-order-number="{{ $inviteOrder->order_number }}"
+                                        data-filer="{{ $inviteFilerName }}"
+                                        data-filer-first="{{ $inviteFirstName }}"
+                                        data-filer-initials="{{ $inviteInitials }}"
+                                        data-filer-photo="{{ $invitePhoto }}"
+                                        data-destination="{{ $inviteOrder->destination }}"
+                                        data-dates="{{ $inviteOrder->formatted_dates }}"
+                                        data-duration="{{ $inviteOrder->duration }}"
+                                        data-party="{{ $inviteParty }}"
+                                        data-purpose="{{ $inviteOrder->purpose }}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Accept invitation
+                                </button>
+                                <button type="button" role="menuitem" class="row-menu-item is-danger"
+                                        onclick="closeRowMenu(); openCompanionResponse(this)"
+                                        data-response="rejected"
+                                        data-order-id="{{ $inviteOrder->id }}"
+                                        data-order-number="{{ $inviteOrder->order_number }}"
+                                        data-filer="{{ $inviteFilerName }}"
+                                        data-filer-first="{{ $inviteFirstName }}"
+                                        data-filer-initials="{{ $inviteInitials }}"
+                                        data-filer-photo="{{ $invitePhoto }}"
+                                        data-destination="{{ $inviteOrder->destination }}"
+                                        data-dates="{{ $inviteOrder->formatted_dates }}"
+                                        data-duration="{{ $inviteOrder->duration }}"
+                                        data-party="{{ $inviteParty }}"
+                                        data-purpose="{{ $inviteOrder->purpose }}">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                    Decline invitation
+                                </button>
+                            @endif
+                        </div>
+                    </td>
+                </tr>
+                @endif
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</section>
+@endif

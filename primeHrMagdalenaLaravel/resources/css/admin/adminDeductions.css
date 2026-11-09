@@ -1,0 +1,1329 @@
+/* ══════════ Deductions — Shared Modal System ══════════
+   Used by every modal in admin/deductions/modals/*.blade.php. Previously each
+   modal file redeclared this block itself (editDeductionTypeModal and
+   editLoanTypeModal already relied on a sibling modal's copy instead of
+   redeclaring it — the duplication was accidental, not by design), and being
+   inline <style> tags, the LAST one to render in the DOM won the cascade for
+   the whole page regardless of which file it came from. Consolidating here
+   preserves that already-in-effect behavior (assignDeductionModal rendered
+   last, so its values — max-width:600px, .form-group margin-bottom:16px — are
+   what actually applied to every modal already) while removing the fragile
+   implicit dependency. */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(var(--theme-primary-rgb), 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    animation: fadeIn 0.2s ease;
+}
+
+/* `:not(#addEmployeeModal)` is here purely to raise specificity to (1,1,0)+1
+   class so this beats adminDashboard.css's `.modal-overlay:not(#addEmployeeModal)
+   { display:none }` — that file is loaded globally by layouts/app.blade.php, and
+   its id-in-:not() outranked a plain two-class rule, leaving every modal on this
+   page permanently invisible even with .active applied. */
+.modal-overlay.active:not(#addEmployeeModal) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-container {
+    background: #fff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(var(--theme-primary-rgb), 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px;
+    border-bottom: 1px solid var(--gp-bg-tint-2);
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    margin: 0 0 4px 0;
+}
+
+.modal-subtitle {
+    font-size: 12px;
+    color: var(--gp-text-mid);
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--gp-text-mid);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--gp-bg-tint);
+    color: var(--gp-pri);
+}
+
+.modal-body {
+    padding: 24px;
+    max-height: calc(90vh - 140px);
+    overflow-y: auto;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    margin-bottom: 6px;
+}
+
+.form-input {
+    padding: 10px 12px;
+    border: 1px solid var(--theme-neutral-200);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--gp-pri);
+    font-family: 'Poppins', sans-serif;
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--gp-pri);
+    box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.form-input::placeholder {
+    color: #b3b1c8;
+}
+
+.field-hint {
+    font-size: 11px;
+    color: var(--gp-text-mid);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+textarea.form-input {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--gp-bg-tint-2);
+}
+
+.btn-cancel {
+    padding: 10px 20px;
+    border: 1px solid var(--theme-neutral-200);
+    background: #fff;
+    color: var(--gp-text-mid);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-cancel:hover {
+    background: var(--gp-bg-tint);
+    border-color: var(--gp-pri);
+    color: var(--gp-pri);
+}
+
+.btn-submit {
+    padding: 10px 20px;
+    border: none;
+    background: var(--gp-pri);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-submit:hover {
+    background: var(--gp-pri-2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+    }
+}
+
+/* ══════════ assignDeductionModal — checkbox list ══════════ */
+.checkbox-group {
+    border: 1px solid var(--theme-neutral-200);
+    border-radius: 6px;
+    padding: 12px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.checkbox-category {
+    margin-bottom: 16px;
+}
+
+.checkbox-category:last-child {
+    margin-bottom: 0;
+}
+
+.category-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gp-pri);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--gp-bg-tint-2);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    margin-bottom: 4px;
+}
+
+.checkbox-label:hover {
+    background: var(--gp-bg-tint);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--gp-pri);
+}
+
+.checkbox-text {
+    font-size: 13px;
+    color: var(--gp-pri);
+    user-select: none;
+}
+
+.warning-box {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: #fff8e1;
+    border: 1px solid #ffd54f;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--gp-text-mid);
+}
+
+.warning-box svg {
+    color: #f9a825;
+}
+
+.checkbox-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--gp-pri);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-family: 'Poppins', sans-serif;
+}
+
+.btn-link:hover {
+    background: var(--gp-bg-tint);
+}
+
+/* ══════════ editEmployeeDeductionModal ══════════ */
+.ded-info-box {
+    background: var(--gp-bg-tint);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.ded-info-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.ded-info-row + .ded-info-row {
+    margin-top: 4px;
+}
+
+.ded-info-label {
+    font-size: 11px;
+    color: var(--gp-text-mid);
+    font-weight: 600;
+}
+
+.ded-info-value {
+    font-size: 13px;
+    color: var(--gp-pri);
+    font-weight: 600;
+}
+
+/* ══════════ assignDeductionScheduleModal ══════════ */
+.deduction-schedule-item {
+    background: #fff;
+    border: 1.5px solid var(--gp-border);
+    border-radius: 8px;
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.deduction-schedule-item:hover {
+    border-color: var(--gp-pri);
+    box-shadow: 0 2px 8px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.deduction-info {
+    flex: 1;
+}
+
+.deduction-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    margin: 0 0 4px 0;
+}
+
+.deduction-details {
+    font-size: 11px;
+    color: var(--gp-text-soft);
+    margin: 0;
+}
+
+.cutoff-selector {
+    display: flex;
+    gap: 8px;
+}
+
+.cutoff-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1.5px solid var(--gp-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gp-text-mid);
+}
+
+.cutoff-radio:hover {
+    border-color: var(--gp-pri);
+    background: var(--gp-bg-tint);
+}
+
+.cutoff-radio input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--gp-pri);
+}
+
+.cutoff-radio input[type="radio"]:checked + span {
+    color: var(--gp-pri);
+}
+
+.cutoff-radio:has(input[type="radio"]:checked) {
+    border-color: var(--gp-pri);
+    background: var(--gp-bg-tint);
+    color: var(--gp-pri);
+}
+
+.schedule-history-item {
+    background: #fff;
+    border: 1px solid var(--gp-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.schedule-history-item:last-child {
+    margin-bottom: 0;
+}
+
+.schedule-period {
+    font-weight: 600;
+    color: var(--gp-pri);
+    margin-bottom: 4px;
+}
+
+.schedule-details {
+    color: var(--gp-text-mid);
+    font-size: 11px;
+}
+
+.schedule-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.schedule-status.active {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.schedule-status.past {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+.schedule-status.future {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+#deductionsList::-webkit-scrollbar,
+#scheduleHistoryList::-webkit-scrollbar {
+    width: 8px;
+}
+
+#deductionsList::-webkit-scrollbar-track,
+#scheduleHistoryList::-webkit-scrollbar-track {
+    background: var(--gp-bg-tint);
+    border-radius: 10px;
+}
+
+#deductionsList::-webkit-scrollbar-thumb,
+#scheduleHistoryList::-webkit-scrollbar-thumb {
+    background: #c5c3e0;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+#deductionsList::-webkit-scrollbar-thumb:hover,
+#scheduleHistoryList::-webkit-scrollbar-thumb:hover {
+    background: var(--gp-pri);
+}
+
+#deductionsList {
+    position: relative;
+}
+
+#deductionsList::after {
+    content: '';
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to top, var(--gp-bg-tint), transparent);
+    pointer-events: none;
+    display: block;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.ded-sched-panel { padding: 24px; overflow-y: auto; flex: 1; max-height: calc(90vh - 200px); }
+.ded-sched-block { margin-bottom: 20px; }
+.ded-sched-label { display: block; font-size: 12px; font-weight: 600; color: var(--gp-pri); margin-bottom: 8px; }
+.ded-sched-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ded-sched-sublabel { display: block; font-size: 11px; font-weight: 600; color: var(--gp-text-mid); margin-bottom: 6px; }
+.ded-sched-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--gp-border); border-radius: 8px; font-size: 13px; font-family: 'Poppins', sans-serif; color: var(--gp-pri); background: #fff; box-sizing: border-box; }
+.ded-sched-history-section { display: none; margin-bottom: 20px; }
+.ded-sched-history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.ded-sched-history-label { font-size: 12px; font-weight: 600; color: var(--gp-pri); }
+.ded-sched-toggle-btn { background: transparent; border: none; color: var(--gp-pri); font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.ded-sched-history-list { display: none; background: var(--gp-bg-tint); border: 1.5px solid var(--gp-border); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; }
+.ded-sched-deductions-box { background: var(--gp-bg-tint); border: 1.5px solid var(--gp-border); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+.ded-sched-deductions-label { margin: 0 0 12px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--gp-text-soft); }
+.ded-sched-deductions-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 8px; }
+.ded-sched-loading { margin: 0; font-size: 13px; color: var(--gp-text-soft); text-align: center; padding: 20px; }
+.ded-sched-note-box { border-radius: 10px; padding: 12px; display: flex; align-items: start; gap: 10px; margin-bottom: 16px; }
+.ded-sched-note-box.is-green { background: #e8f5e9; border: 1.5px solid #a5d6a7; }
+.ded-sched-note-box.is-gold { background: #fbf6e3; border: 1.5px solid #ecdca4; }
+.ded-sched-note-icon { flex-shrink: 0; margin-top: 2px; }
+.ded-sched-note-text { margin: 0; font-size: 12px; line-height: 1.5; }
+.ded-sched-note-text.is-green { color: #1b5e20; }
+.ded-sched-note-text.is-gold { color: #c9a227; }
+.ded-sched-footer { padding: 16px 24px; border-top: 1px solid var(--gp-bg-tint-2); display: flex; justify-content: flex-end; gap: 10px; }
+.ded-sched-btn-cancel { padding: 10px 24px; background: #fff; border: 1.5px solid var(--gp-border); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--gp-text-mid); cursor: pointer; font-family: 'Poppins', sans-serif; }
+.ded-sched-btn-submit { padding: 10px 24px; background: var(--gp-pri); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; color: #fff; cursor: pointer; font-family: 'Poppins', sans-serif; display: flex; align-items: center; gap: 8px; }
+.ded-deduction-badge-inline { display: inline-block; padding: 2px 8px; background: var(--gp-bg-tint-2); border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--gp-pri); margin-right: 6px; }
+
+/* ══════════ Page-wide utility classes (replacing inline style="") ══════════ */
+.ded-mb-20 { margin-bottom: 20px; }
+.ded-icon-wrap-blue { background: var(--gp-pri)18; color: var(--gp-pri); }
+.ded-icon-wrap-gold { background: #c9a22718; color: #c9a227; }
+.ded-icon-wrap-red { background: #8e1e1818; color: #8e1e18; }
+.ded-icon-wrap-green { background: #15803d18; color: #15803d; }
+.ded-dot-blue { background: var(--gp-pri); }
+.ded-dot-gold { background: #c9a227; }
+.ded-dot-red { background: #8e1e18; }
+.ded-dot-green { background: #15803d; }
+.ded-stat-value-sm { font-size: 18px; }
+.ded-filter-contents { display: contents; }
+.ded-hidden { display: none; }
+.ded-required { color: #8e1e18; }
+.ded-col { flex: 1; }
+.ded-col-2 { flex: 2; }
+.ded-readonly-input { background: var(--gp-bg-tint); cursor: not-allowed; }
+.ded-field-note { font-size: 11px; color: var(--gp-text-mid); margin: 4px 0 0 0; }
+.ded-field-hint-hidden { font-size: 11px; color: var(--gp-text-mid); margin: 4px 0 0 0; display: none; }
+.ded-uppercase { text-transform: uppercase; }
+.ded-inline-note { display: block; margin-top: 6px; }
+.ded-info-banner { border-radius: 8px; padding: 12px; display: flex; align-items: start; gap: 10px; margin-top: 16px; }
+.ded-info-banner.is-blue { background: #e3f2fd; border: 1px solid #90caf9; }
+.ded-info-icon { flex-shrink: 0; margin-top: 2px; }
+.ded-info-text { margin: 0; font-size: 12px; line-height: 1.5; }
+.ded-info-text.is-blue { color: #0d47a1; }
+.ded-warn-box { display: none; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px; margin-top: 16px; }
+.ded-warn-body { display: flex; align-items: start; gap: 10px; }
+.ded-warn-text { margin: 0; font-size: 12px; color: #856404; line-height: 1.5; }
+.ded-avatar-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gp-border); }
+.ded-row-flex { display: flex; align-items: center; gap: 10px; }
+.ded-cell-title { font-weight: 600; color: var(--gp-pri); margin: 0; font-size: 13px; }
+.ded-cell-sub { color: var(--gp-text-soft); margin: 0; font-size: 11px; }
+.ded-text-sm { font-size: 13px; color: var(--gp-text-mid); }
+.ded-text-muted-sm { font-size: 12px; color: var(--gp-text-mid); }
+.ded-text-faint-sm { font-size: 13px; color: var(--gp-text-soft); }
+.ded-empty-cell { text-align: center; padding: 40px; color: var(--gp-text-soft); }
+.ded-ellipsis { padding: 0 8px; color: var(--gp-text-soft); }
+.ded-actions { display: flex; gap: 6px; }
+.ded-danger-btn { color: #8e1e18; }
+.ded-disabled-btn { opacity: 0.3; cursor: not-allowed; }
+.ded-mono-code { font-family: 'Courier New', monospace; font-size: 12px; color: var(--gp-text-mid); background: var(--gp-bg-tint); padding: 4px 8px; border-radius: 4px; }
+.ded-min-w-120 { min-width: 120px; }
+.ded-min-w-16 { min-width: 16px; }
+.ded-progress-track { display: flex; flex-direction: column; gap: 4px; }
+.ded-progress-bar { width: 100%; height: 6px; background: var(--gp-bg-tint-2); border-radius: 3px; overflow: hidden; }
+.ded-progress-fill { height: 100%; transition: width 0.3s; }
+.ded-progress-pct { font-size: 11px; color: var(--gp-text-mid); }
+.ded-badge-count { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.ded-badge-count.is-blue { background: var(--gp-bg-tint-2); color: var(--gp-pri); }
+.ded-badge-count.is-gold { background: #fbf6e3; color: #c9a227; }
+.ded-footer-flex { display: flex; align-items: center; gap: 12px; }
+.ded-rows-select { width: auto; padding: 6px 10px; font-size: 13px; }
+.ded-selected-count { color: var(--gp-text-mid); font-weight: 400; margin-left: 8px; }
+.ded-existing-list { margin: 4px 0 0 0; font-size: 12px; }
+.ded-checkbox-value { color: var(--gp-text-soft); font-size: 11px; }
+.ded-checkbox-rate { color: var(--gp-text-mid); font-size: 11px; }
+.ded-badge-employee-share { background: #fff3e0; color: #e65100; }
+.ded-badge-employer-share { background: #e8f5e9; color: #2e7d32; }
+.ded-badge-active { background: #15803d18; color: #15803d; }
+.ded-badge-inactive { background: var(--gp-text-mid)18; color: var(--gp-text-mid); }
+.ded-notice-banner { background: #e3f2fd; border: 1px solid #90caf9; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; color: #1565c0; }
+.ded-notice-text { font-size: 13px; }
+.ded-notice-banner-teal { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; color: #1e40af; }
+
+/* ══════════ Loans tab — the Employee Loans table ══════════
+   Scoped to `.lt-table` / `#loans-tab` so none of it reaches the five sibling
+   tabs that share .payroll-table. Two things this table relied on did not
+   exist anywhere in the codebase: `.badge` and `.action-btn` are declared in
+   the markup of three deductions partials but have no rule in any stylesheet,
+   so the badges rendered as bare coloured text and the row actions as default
+   browser buttons. The `.lt-` classes below replace them for this table. */
+
+/* The table never scrolls sideways: `fixed` layout at 100% width makes every
+   column a share of the card rather than a function of its content, so long
+   names wrap inside their cell instead of pushing the table wider than its
+   wrapper. The eight percentages below total 100. */
+.lt-table { width: 100%; table-layout: fixed; }
+.lt-table th.lt-c-employee { width: 19%; }
+.lt-table th.lt-c-loan     { width: 15%; }
+.lt-table th.lt-c-balance  { width: 12%; }
+.lt-table th.lt-c-progress { width: 12%; }
+.lt-table th.lt-c-amort    { width: 13%; }
+.lt-table th.lt-c-term     { width: 10%; }
+.lt-table th.lt-c-status   { width: 11%; }
+.lt-table th.lt-c-actions  { width: 8%;  }
+
+.lt-table thead th {
+    padding: 12px 14px;
+    font-size: 11px;
+    letter-spacing: .5px;
+    white-space: nowrap;
+}
+.lt-table tbody td {
+    padding: 14px;
+    vertical-align: middle;
+    overflow-wrap: break-word;
+}
+
+/* Money reads down the column, so it is right-aligned and tabular — digits of
+   the same rank line up between rows. */
+.lt-table th.lt-num,
+.lt-table td.lt-num { text-align: right; }
+.lt-table td.lt-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.lt-employee { display: flex; align-items: center; gap: 11px; }
+.lt-employee-text { min-width: 0; }
+.lt-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--gp-border);
+}
+.lt-avatar-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+/* Three text ranks, used in every cell: title, supporting line, plain value. */
+.lt-table .lt-primary { margin: 0; font-size: 13px; font-weight: 600; color: var(--gp-pri); line-height: 1.35; }
+.lt-table .lt-secondary { margin: 2px 0 0; font-size: 11px; color: var(--gp-text-soft); line-height: 1.4; }
+.lt-table .lt-muted { margin: 0; font-size: 12.5px; color: var(--gp-text-mid); }
+.lt-table .lt-amount { margin: 0; font-size: 13px; font-weight: 600; color: var(--gp-pri); font-variant-numeric: tabular-nums; }
+.lt-table .lt-amount.is-due { color: #a16207; }
+.lt-table .lt-amount.is-settled { color: #15803d; }
+.lt-unit { margin-left: 2px; font-size: 11px; font-weight: 600; color: var(--gp-text-soft); }
+
+.lt-loan-meta { display: flex; align-items: center; gap: 7px; margin-top: 5px; }
+.lt-code { font-family: 'Courier New', monospace; font-size: 10.5px; color: var(--gp-text-soft); }
+
+.lt-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.lt-tag.is-gsis { background: var(--theme-neutral-200); color: var(--gp-pri); border-color: #d9dcf4; }
+.lt-tag.is-pagibig { background: #e9f6ee; color: #15803d; border-color: #c6e7d3; }
+.lt-tag.is-other { background: #f1f0f7; color: var(--gp-text-mid); border-color: #e2e0ee; }
+.lt-tag.is-custom {
+    margin-left: 4px;
+    background: #fbf6e3;
+    color: #8a6d1f;
+    border-color: #eddfae;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.lt-progress { display: flex; flex-direction: column; gap: 6px; }
+/* Wraps rather than overflows: on a narrow column the paid figure drops to its
+   own line instead of colliding with the percentage. */
+.lt-progress-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; }
+.lt-progress-pct { font-size: 12px; font-weight: 700; color: var(--gp-pri); font-variant-numeric: tabular-nums; }
+.lt-progress-note { font-size: 10.5px; color: var(--gp-text-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lt-progress-note.is-settled { font-weight: 600; color: #15803d; }
+.lt-progress-bar { height: 6px; border-radius: 999px; background: var(--gp-border); overflow: hidden; }
+.lt-progress-fill { height: 100%; border-radius: 999px; transition: width .35s ease; }
+.lt-progress-fill.is-active { background: linear-gradient(90deg, #2a1d8f, var(--gp-pri)); }
+.lt-progress-fill.is-settled { background: linear-gradient(90deg, #22a355, #15803d); }
+.lt-progress-fill.is-suspended { background: linear-gradient(90deg, #d8b74a, #c9a227); }
+
+.lt-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px 4px 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.lt-status::before { content: ''; width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
+.lt-status.is-active { background: #e9f6ee; color: #15803d; border-color: rgba(21, 128, 61, .22); }
+.lt-status.is-suspended { background: #fbf3e0; color: #8a6d1f; border-color: rgba(201, 162, 39, .32); }
+.lt-status.is-completed { background: #f1f0f7; color: var(--gp-text-mid); border-color: rgba(86, 84, 122, .2); }
+
+/* Centred, not flushed right: an icon-only column pinned to the card edge reads
+   as falling off it. The header label sits directly over the ⋮ button. */
+.lt-table th.lt-c-actions,
+.lt-table td.lt-c-actions { text-align: center; padding-left: 4px; padding-right: 4px; }
+.lt-actions { display: flex; align-items: center; justify-content: center; }
+.lt-action-btn {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--gp-text-soft);
+    cursor: pointer;
+    transition: background .16s ease, color .16s ease, border-color .16s ease;
+}
+.lt-action-btn:hover,
+.lt-action-btn.is-open { background: var(--gp-bg-tint-2); border-color: #e2e0ee; color: var(--gp-pri); }
+.lt-action-btn:focus-visible { outline: 2px solid rgba(var(--theme-primary-rgb), .35); outline-offset: 2px; }
+
+/* Fixed, and relocated to <body> by loans.js — see the comment there for why it
+   cannot be positioned inside the cell. Coordinates come from the button. */
+.lt-menu {
+    display: none;
+    position: fixed;
+    z-index: 1200;
+    min-width: 176px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid var(--gp-border);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(var(--theme-primary-rgb), .14), 0 2px 6px rgba(var(--theme-primary-rgb), .06);
+}
+.lt-menu.is-open { display: block; animation: ltMenuIn .14s ease; }
+
+@keyframes ltMenuIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.lt-menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: #3f3d63;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.lt-menu-item svg { flex-shrink: 0; opacity: .9; }
+.lt-menu-item:hover { background: #f5f4fd; color: var(--gp-pri); }
+.lt-menu-item:focus-visible { outline: 2px solid rgba(var(--theme-primary-rgb), .3); outline-offset: -2px; }
+.lt-menu-item.is-danger { color: #8e1e18; }
+.lt-menu-item.is-danger:hover { background: #fdf0ef; color: #8e1e18; }
+.lt-menu-sep { height: 1px; margin: 5px 4px; background: #f0effe; }
+
+.lt-table td.lt-empty { padding: 48px 20px; text-align: center; }
+.lt-empty-body { display: flex; flex-direction: column; align-items: center; max-width: 380px; margin: 0 auto; }
+.lt-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: var(--gp-bg-tint-2);
+    color: var(--gp-pri);
+}
+.lt-empty-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: var(--gp-pri); }
+.lt-empty-sub { margin: 0; font-size: 12px; color: var(--gp-text-soft); line-height: 1.5; }
+.lt-empty-cta {
+    margin-top: 14px;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 999px;
+    background: var(--gp-pri);
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .16s ease;
+}
+.lt-empty-cta:hover { background: var(--gp-pri-2); }
+
+/* .table-wrapper is a scroll container by default (overflow:auto in admin.css).
+   The fixed layout above means there is nothing left to scroll, so drop the
+   container entirely rather than leave a scrollbar that can still appear from a
+   sub-pixel rounding difference. */
+#loans-tab .table-wrapper { overflow: visible; }
+
+/* Narrow viewports drop columns rather than squeeze all eight — everything
+   dropped here is still on the row's View details. */
+@media (max-width: 1280px) {
+    .lt-table thead th,
+    .lt-table tbody td { padding-left: 11px; padding-right: 11px; }
+    .lt-code { display: none; }
+}
+
+@media (max-width: 1100px) {
+    .lt-table th.lt-c-term,
+    .lt-table td.lt-c-term { display: none; }
+}
+
+@media (max-width: 900px) {
+    .lt-table th.lt-c-amort,
+    .lt-table td.lt-c-amort { display: none; }
+    .lt-avatar { width: 32px; height: 32px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Employee Deductions table
+
+   Ten columns overflowed the wrapper (1200px into 1142px), which put the
+   Actions menu past the right edge and wrapped every employee name onto
+   three lines. Category folded into the deduction cell and the two date
+   columns into one Period, leaving eight — so each cell can hold one line
+   and the row height stays even.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.ded-emp-table {
+    table-layout: fixed;
+    width: 100%;
+    /* A table's `min-width` defaults to `auto`, which resolves to its
+       min-content width — 1200px here, so it kept overflowing the 1142px
+       wrapper no matter what the column percentages said. With this, the
+       fixed layout and the ellipsis rules below actually take effect. */
+    min-width: 0;
+}
+.ded-emp-table th,
+.ded-emp-table td { overflow: hidden; }
+.ded-emp-table th:nth-child(1) { width: 19%; }   /* Employee   */
+.ded-emp-table th:nth-child(2) { width: 14%; }   /* Department */
+.ded-emp-table th:nth-child(3) { width: 19%; }   /* Deduction  */
+.ded-emp-table th:nth-child(4) { width: 14%; }   /* Amount     */
+.ded-emp-table th:nth-child(5) { width: 12%; }   /* Cutoff     */
+.ded-emp-table th:nth-child(6) { width: 12%; }   /* Period     */
+.ded-emp-table th:nth-child(7) { width: 10%; }   /* Status     */
+.ded-emp-table th:nth-child(8) { width: 84px; }  /* Actions — wide enough for its own header label */
+
+/* Names and office names are long and their full value is on `title`, so
+   truncating beats wrapping a cell to three lines. */
+.ded-emp-table .ded-cell-title,
+.ded-emp-table .dept-tag {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ded-emp-table .dept-tag { max-width: 100%; }
+.ded-emp-text { min-width: 0; flex: 1; }
+
+.ded-avatar-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-color: transparent;
+    flex-shrink: 0;
+}
+
+/* Category chip — themed, replacing the hand-mixed `#0b044d18` fills that
+   could not follow the palette. */
+.ded-chip {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    vertical-align: 1px;
+}
+.ded-chip.is-mandatory { background: var(--theme-primary-light); color: var(--theme-stat-icon-fg); }
+.ded-chip.is-loan      { background: var(--theme-warning-subtle); color: var(--theme-warning-emphasis); }
+.ded-chip.is-other     { background: var(--theme-neutral-100);    color: var(--theme-text-mid); }
+.ded-code { color: var(--gp-text-soft); margin-left: 6px; font-size: 10.5px; }
+
+/* Money reads as money: right-aligned, tabular figures so digits line up
+   down the column.
+
+   The header needs the qualified selector: `.payroll-table thead th
+   { text-align: left }` in admin.css is (0,1,2) and beats a lone class
+   (0,1,0) whatever the load order, so "In use" and "Amount" rendered left
+   above right-aligned cells. The bare selector stays for the <td>. */
+.ded-num-col { text-align: right; }
+.payroll-table thead th.ded-num-col { text-align: right; }
+.ded-amount {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gp-pri);
+    font-variant-numeric: tabular-nums;
+}
+.ded-num-col .ded-cell-sub { font-variant-numeric: tabular-nums; }
+.ded-auto { font-style: italic; }
+
+/* Repayment progress. A remaining balance says little on its own — this
+   shows how far through the loan the employee actually is. */
+.ded-progress {
+    display: block;
+    height: 4px;
+    margin-top: 6px;
+    border-radius: 999px;
+    background: var(--theme-neutral-200);
+    overflow: hidden;
+}
+.ded-progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--theme-success);
+}
+
+/* Empty state, in place of a bare sentence in a merged cell. */
+.ded-empty-cell { text-align: center; padding: 44px 20px; color: var(--gp-text-soft); }
+.ded-empty-icon { color: var(--theme-neutral-400); margin: 0 auto 10px; display: block; }
+.ded-empty-title { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; color: var(--gp-ink); }
+.ded-empty-sub { margin: 0; font-size: 12px; color: var(--gp-text-soft); }
+.ded-empty-sub strong { color: var(--gp-text-mid); }
+
+@media (max-width: 1200px) {
+    /* Cutoff is the least load-bearing column; it is also on the row menu's
+       edit screen, so it is the one to drop first. */
+    .ded-emp-table th:nth-child(5),
+    .ded-emp-table td:nth-child(5) { display: none; }
+    .ded-emp-table th:nth-child(1) { width: 24%; }
+    .ded-emp-table th:nth-child(3) { width: 22%; }
+}
+
+/* ── Deduction Types table ───────────────────────────────────────────────
+   Six columns rather than ten. Computation type, rate and base salary were
+   three columns of enum values describing one fact, and both amount columns
+   read `max_amount` — which is null on every row, so 18 cells rendered as a
+   bare em-dash.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.ded-types-table { table-layout: fixed; width: 100%; min-width: 0; }
+.ded-types-table th,
+.ded-types-table td { overflow: hidden; }
+.ded-types-table th:nth-child(1) { width: 30%; }  /* Deduction   */
+.ded-types-table th:nth-child(2) { width: 12%; }  /* Category    */
+.ded-types-table th:nth-child(3) { width: 12%; }  /* Borne by    */
+.ded-types-table th:nth-child(4) { width: 24%; }  /* Computation */
+.ded-types-table th:nth-child(5) { width: 12%; }  /* Status      */
+.ded-types-table th:nth-child(6) { width: 96px; } /* Actions     */
+
+.ded-types-table .ded-cell-title {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The code is the row's identifier, so it keeps the monospace treatment but
+   without the leading gap it has when it trails a chip. */
+.ded-code-lead { margin-left: 0; }
+
+/* Computation reads left-to-right as a phrase, unlike the money column on
+   the Employee Deductions table which is right-aligned. */
+.ded-amount-left { text-align: left; }
+
+.ded-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-width: 1100px) {
+    /* Who bears the cost is on the edit screen too, so it goes first. */
+    .ded-types-table th:nth-child(3),
+    .ded-types-table td:nth-child(3) { display: none; }
+    .ded-types-table th:nth-child(1) { width: 34%; }
+    .ded-types-table th:nth-child(4) { width: 28%; }
+}
+
+/* ── Schedules / Loan Types / Transactions ───────────────────────────────
+   All three overflowed the 1142px wrapper for the same reason as the two
+   above: a table's `min-width` defaults to `auto`, i.e. its min-content
+   width, which silently beats any column sizing.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.ded-sched-table,
+.ded-loantypes-table,
+.ded-txn-table { table-layout: fixed; width: 100%; min-width: 0; }
+.ded-sched-table th, .ded-sched-table td,
+.ded-loantypes-table th, .ded-loantypes-table td,
+.ded-txn-table th, .ded-txn-table td { overflow: hidden; }
+
+.ded-sched-table .ded-cell-title,
+.ded-sched-table .dept-tag,
+.ded-loantypes-table .ded-cell-title {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Schedules — Employee | Department | Deductions | Loans | Updated | Action */
+.ded-sched-table th:nth-child(1) { width: 26%; }
+.ded-sched-table th:nth-child(2) { width: 20%; }
+.ded-sched-table th:nth-child(3) { width: 16%; }
+.ded-sched-table th:nth-child(4) { width: 14%; }
+.ded-sched-table th:nth-child(5) { width: 13%; }
+.ded-sched-table th:nth-child(6) { width: 126px; }
+
+/* Loan types — Type | Provider | Limits | In use | Status | Actions */
+.ded-loantypes-table th:nth-child(1) { width: 30%; }
+.ded-loantypes-table th:nth-child(2) { width: 13%; }
+.ded-loantypes-table th:nth-child(3) { width: 24%; }
+.ded-loantypes-table th:nth-child(4) { width: 11%; }
+.ded-loantypes-table th:nth-child(5) { width: 12%; }
+.ded-loantypes-table th:nth-child(6) { width: 84px; }
+
+/* Transactions — Date | Employee | Deduction | Cutoff | Amount | Actions */
+.ded-txn-table th:nth-child(1) { width: 14%; }
+.ded-txn-table th:nth-child(2) { width: 26%; }
+.ded-txn-table th:nth-child(3) { width: 24%; }
+.ded-txn-table th:nth-child(4) { width: 12%; }
+.ded-txn-table th:nth-child(5) { width: 14%; }
+.ded-txn-table th:nth-child(6) { width: 84px; }
+
+@media (max-width: 1100px) {
+    /* Least load-bearing column on each table goes first. */
+    .ded-sched-table th:nth-child(5),
+    .ded-sched-table td:nth-child(5) { display: none; }
+    .ded-loantypes-table th:nth-child(2),
+    .ded-loantypes-table td:nth-child(2) { display: none; }
+}
+
+/* ── Loan Type details modal ─────────────────────────────────────────────
+   Replaces a window.alert() that drew its own box out of ╔═╗ characters.
+   Shares the .modal-container shell with editLoanTypeModal so the pair read
+   as one, and takes its colours from the theme like everything else.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.vlt-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--gp-border);
+    border-radius: 12px;
+    background: var(--gp-bg-tint);
+}
+.vlt-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    flex-shrink: 0;
+    background: var(--theme-warning-subtle);
+    color: var(--theme-warning-emphasis);
+}
+.vlt-head-text { flex: 1; min-width: 0; }
+.vlt-name {
+    margin: 0 0 2px;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--gp-pri);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.vlt-code { margin: 0; }
+
+/* Definition list rather than a table: these are label/value pairs, and a
+   two-column grid keeps them aligned without one. */
+.vlt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 18px;
+    margin: 0 0 4px;
+}
+.vlt-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gp-bg-tint-2);
+}
+.vlt-row dt {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--gp-text-soft);
+}
+.vlt-row dd {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 560px) {
+    .vlt-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Employee Loan details modal ─────────────────────────────────────────
+   Replaces a window.alert() that drew its own box out of ╔═╗ characters and
+   padded its columns with padEnd(31) — unthemeable, and it truncated any
+   employee name or loan type longer than the pad.
+
+   Shares the .modal-container shell with viewLoanTypeModal so the two "view"
+   screens on this page read as one pair, and reuses the Loans table's own
+   .lt-tag / .ded-chip / .badge-status vocabularies so the modal and the row
+   it was opened from describe the loan in the same words and colours.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.vld-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--gp-border);
+    border-radius: 12px;
+    background: var(--gp-bg-tint);
+}
+.vld-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    border: 1px solid var(--gp-border);
+}
+/* Themed rather than the table's per-employee colour wheel: those hues are
+   assigned in Blade from $avatarColors, and re-deriving them in JS would be
+   a second copy of that list free to drift from the first. */
+.vld-avatar-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-primary-light);
+    color: var(--theme-stat-icon-fg);
+    border-color: var(--theme-primary-border);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .3px;
+}
+.vld-head-text { flex: 1; min-width: 0; }
+.vld-name {
+    margin: 0 0 2px;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--gp-pri);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.vld-head-sub {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--gp-text-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The three figures the record turns on, lifted out of the label/value lists
+   so they carry the weight they have in the decision being made. */
+.vld-figures {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.vld-figure {
+    padding: 12px 14px;
+    border: 1px solid var(--gp-border);
+    border-radius: 10px;
+    background: #fff;
+    min-width: 0;
+}
+.vld-figure-label {
+    margin: 0 0 4px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: var(--gp-text-soft);
+}
+.vld-figure-value {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gp-pri);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+/* The outstanding figure is the one that decides whether anything is still
+   owed, so it carries the accent — amber while due, green once settled. */
+.vld-figure.is-balance { border-color: var(--theme-warning-border); background: var(--theme-warning-subtle); }
+.vld-figure.is-balance .vld-figure-value { color: var(--theme-warning-emphasis); }
+.vld-figure.is-balance.is-settled { border-color: var(--theme-success-border); background: var(--theme-success-subtle); }
+.vld-figure.is-balance.is-settled .vld-figure-value { color: var(--theme-success-emphasis); }
+
+.vld-section { margin-bottom: 18px; }
+.vld-section:last-of-type { margin-bottom: 0; }
+.vld-section-title {
+    margin: 0 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--gp-border);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--gp-text-mid);
+}
+
+/* Same progress reading as the table row, so the two cannot disagree. */
+.vld-progress { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 4px; }
+.vld-progress-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 8px; }
+.vld-progress-pct { font-size: 13px; font-weight: 700; color: var(--gp-pri); font-variant-numeric: tabular-nums; }
+.vld-progress-note { font-size: 11px; color: var(--gp-text-soft); font-variant-numeric: tabular-nums; }
+.vld-progress-note.is-settled { font-weight: 600; color: var(--theme-success-emphasis); }
+.vld-progress-bar { height: 6px; border-radius: 999px; background: var(--gp-border); overflow: hidden; }
+.vld-progress-fill { height: 100%; border-radius: 999px; background: var(--gp-pri); transition: width .35s ease; }
+.vld-progress-fill.is-settled { background: var(--theme-success); }
+.vld-progress-fill.is-suspended { background: var(--gp-accent-gold); }
+
+/* Definition list rather than a table: these are label/value pairs, and a
+   two-column grid keeps them aligned without one. Same shape as .vlt-grid. */
+.vld-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 18px;
+    margin: 0;
+}
+.vld-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--gp-bg-tint-2);
+    min-width: 0;
+}
+/* A value that is a phrase rather than a figure ("Both Cutoffs (Split
+   50-50)") does not fit half a row beside its label. */
+.vld-row-wide { grid-column: 1 / -1; }
+.vld-row dt {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--gp-text-soft);
+    white-space: nowrap;
+}
+.vld-row dd {
+    margin: 0;
+    min-width: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--gp-pri);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+.vld-row dd .lt-tag { vertical-align: 1px; }
+
+.vld-remarks {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--gp-border);
+    border-radius: 8px;
+    background: var(--gp-bg-tint);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--gp-text-mid);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+    .vld-figures { grid-template-columns: 1fr; }
+    .vld-grid { grid-template-columns: 1fr; }
+    /* Label above value once the row is one column wide: a right-aligned
+       value opposite a long label wraps into a two-line zigzag. */
+    .vld-row { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .vld-row dd { text-align: left; }
+}
+
+/* The two conditionally shown children carry author `display` rules, which
+   beat the UA stylesheet's [hidden] — so their hidden state has to be
+   spelled out here rather than left to the attribute alone. */
+.vld-avatar[hidden],
+.vld-row dd .lt-tag[hidden] { display: none; }

@@ -1,0 +1,903 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Attendance;
+use App\Models\Employee;
+use App\Models\LeaveApplication;
+use App\Models\LeaveBalance;
+use App\Models\SalaryComputation;
+use App\Models\Training;
+use App\Models\TravelOrder;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+
+class EmployeeChatbotService
+{
+    public function __construct(
+        private HrPolicyFactsService $facts,
+        private ?CitizenCharterService $charter = null,
+        private ?AiScopeGuard $scope = null,
+    ) {
+        $this->charter ??= new CitizenCharterService();
+        $this->scope ??= new AiScopeGuard($this->charter);
+    }
+
+    /**
+     * The self-service navigation map. Menu paths live in Blade views, so there
+     * is no table to read them from — unlike the policy figures above them,
+     * which used to be typed here too (480, the 5-minute grace, "8:00–13:00",
+     * "VL first then SL") and now come from HrPolicyFactsService, scoped to
+     * *this* employee's own schedule rather than a assumed standard one.
+     */
+    private const NAVIGATION = <<<'TEXT'
+HOW TO USE THE SYSTEM (employee self-service):
+- Leave: Leave & Benefits → File Leave (select type, dates, reason; attach if required).
+- Payslip: Payslip section to view/download periods.
+- Attendance: Attendance / DTR for daily records and summary.
+- Training: Training → Add New Training (upload certificate, submit for HR verification).
+- Travel: Travel Orders → File Travel Order.
+- Profile: update personal info where allowed.
+
+PRIVACY: Employees may only view their own HR records, not coworkers' data.
+TEXT;
+
+    private function knowledge(Employee $employee): string
+    {
+        return $this->facts->knowledgeBlock($employee) . "\n\n" . self::NAVIGATION;
+    }
+
+    /**
+     * The same self-scoped answer `handle()` produces, in the shape
+     * AiQueryService dispatches (`answer` + `follow_ups`).
+     *
+     * This exists so the web assistant and the mobile chatbot share one
+     * employee-facing brain instead of diverging. Every context builder below
+     * filters on the employee's own id, which is what makes this path safe for
+     * a caller who may not run generated SQL.
+     *
+     * No history parameter: the orchestrator resolves follow-ups into a
+     * standalone question before dispatching, so the message arriving here
+     * already names its own subject.
+     *
+     * @return array{answer: string, follow_ups: array<int, string>}
+     */
+    public function assist(Employee $employee, string $message): array
+    {
+        $result = $this->handle($employee, $message);
+
+        return [
+            'answer' => $result['response'],
+            'follow_ups' => $result['follow_up_questions'] ?? [],
+        ];
+    }
+
+    public function handle(Employee $employee, string $message): array
+    {
+        $message = trim($message);
+
+        $validation = $this->validateQuery($message);
+        if (!$validation['valid']) {
+            return $this->result($validation['message'], $this->defaultFollowUps());
+        }
+
+        if ($this->isGreeting($message)) {
+            $name = trim($employee->first_name . ' ' . $employee->last_name);
+            $greeting = $name !== '' ? "Hello, {$name}!" : 'Hello!';
+            return $this->result(
+                "{$greeting} I'm your HRIS assistant. I can answer questions about **your** leave, payslip, attendance, training, travel, and monetization records, plus explain how our HR system works. What would you like to know?",
+                [
+                    'What is my leave balance?',
+                    'How do I file a leave request?',
+                    'Show my latest payslip',
+                    'How is late deduction calculated?',
+                ]
+            );
+        }
+
+        // A question about something other than this HRIS, the municipality, or
+        // this system is refused before the own-records machinery runs. The
+        // mobile chatbot (`MobileChatbotController`) reaches this method
+        // directly and never passes through AiQueryService, so the boundary has
+        // to be enforced here too — the web and mobile surfaces must not answer
+        // different sets of questions.
+        if ($this->scope->isOutOfScope($message)) {
+            return $this->result($this->scope->refusal(), $this->defaultFollowUps());
+        }
+
+        // Municipality information comes from the imported Citizen's Charter —
+        // public text, not anyone's record — so it is answered before the
+        // own-records machinery below (a "find the requirements for a business
+        // permit" names no employee, but the cross-employee guard below would
+        // refuse it on the verb "find"). This is also the path the mobile
+        // chatbot reaches, which never passes through AiQueryService.
+        if ($this->charter->looksLikeCharterQuestion($message)) {
+            $charterAnswer = $this->charter->answer(null, $message);
+
+            if ($charterAnswer !== null) {
+                return $this->result($charterAnswer['answer'], $charterAnswer['follow_ups']);
+            }
+        }
+
+        if ($this->isCrossEmployeeQuery($message, $employee)) {
+            return $this->result(
+                "For privacy and data protection, I can only share **your own** HR information—not records of other employees. I can help with your leave balance, payslip, attendance, training, travel orders, monetization requests, or explain how to use HRIS. What would you like to know about your account?",
+                $this->defaultFollowUps()
+            );
+        }
+
+        // "How much leave did my late cost?" is a computation, not a policy
+        // question, and it must not be answered by the model applying the rules
+        // in its prompt — that is arithmetic on someone's pay. Run the real
+        // conversion over the employee's own logged minutes instead.
+        $computed = $this->computedDeductionAnswer($employee, $message);
+        if ($computed !== null) {
+            return $this->result($computed['answer'], $computed['follow_up']);
+        }
+
+        $policy = $this->getPolicyAnswer($employee, $message);
+        if ($policy !== null) {
+            return $this->result($policy['answer'], $policy['follow_up']);
+        }
+
+        $intent = $this->detectIntent($message);
+        $context = $this->buildEmployeeContext($employee, $intent, $message);
+        $response = $this->generateResponse($message, $context, $employee, $intent);
+
+        return $this->result($response, $this->followUpsForIntent($intent));
+    }
+
+    private function result(string $response, array $followUps = []): array
+    {
+        return [
+            'response' => $response,
+            'follow_up_questions' => $followUps,
+            'status' => 'success',
+        ];
+    }
+
+    private function validateQuery(string $query): array
+    {
+        if (strlen($query) < 2) {
+            return ['valid' => false, 'message' => 'Your message is too short. Please add a bit more detail.'];
+        }
+
+        $vowels = preg_match_all('/[aeiouAEIOUáéíóú]/u', $query);
+        $consonants = preg_match_all('/[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZñ]/u', $query);
+
+        if ($consonants > 0 && ($vowels / max($consonants, 1)) < 0.15) {
+            return ['valid' => false, 'message' => "I couldn't understand that. Could you rephrase your question?"];
+        }
+
+        return ['valid' => true];
+    }
+
+    private function isGreeting(string $message): bool
+    {
+        return (bool) preg_match(
+            '/^(hi|hello|hey|good\s+(morning|afternoon|evening)|kumusta|kamusta|magandang)\b/i',
+            $message
+        ) && str_word_count($message) <= 8;
+    }
+
+    private function isCrossEmployeeQuery(string $message, Employee $employee): bool
+    {
+        $lower = Str::lower($message);
+
+        if (preg_match('/\b(my|mine|ako|aking|sarili)\b/u', $lower)) {
+            return false;
+        }
+
+        if (preg_match('/\b(who am i|about me|my profile|my info|aking profile)\b/u', $lower)) {
+            return false;
+        }
+
+        $blocked = [
+            '/\b(how many|ilan|ilang|total|count|number of)\b.*\b(employee|empleyado|staff|personnel|tao|workers)\b/u',
+            '/\b(list|show|display|ipakita)\b.*\b(all\s+)?(employee|empleyado|staff)\b/u',
+            '/\b(who works|sino ang|employees? in|staff in|personnel in)\b/u',
+            '/\b(find|search|hanapin|sino si|who is)\b(?!.*\b(me|myself|ako)\b)/u',
+            '/\b(department head|head of|opisina ng)\b/u',
+            '/\b(salary|sweldo|sahod)\s+of\b/u',
+            '/\bother employee|ibang empleyado|coworker|co-worker|katrabaho\b/u',
+            '/\b(admin|all users|everyone)\b.*\b(data|record|info)\b/u',
+        ];
+
+        foreach ($blocked as $pattern) {
+            if (preg_match($pattern, $lower)) {
+                return true;
+            }
+        }
+
+        $selfName = Str::lower(trim($employee->first_name . ' ' . $employee->last_name));
+        if (preg_match('/\b(find|who is|sino si|info about|details of)\b/u', $lower)) {
+            if ($selfName && !str_contains($lower, $selfName) && !str_contains($lower, Str::lower($employee->first_name))) {
+                if (preg_match('/\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/', $message)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * "How much leave did my late cost?" answered from the employee's own
+     * logged minutes, using the system's own conversion.
+     *
+     * The prompt used to carry a worked example ("30 mins late → 0.0625 VL
+     * day") and the model was left to apply it. That is arithmetic on a real
+     * person's pay done by a language model from a remembered rule — the exact
+     * thing that produces a confident wrong number. `accredited_hours_log`
+     * already stores the minutes the system computed, and
+     * CscTimeConversionService already owns the conversion, so this reads both
+     * and states the result.
+     *
+     * @return array{answer: string, follow_up: array<int, string>}|null
+     */
+    private function computedDeductionAnswer(Employee $employee, string $message): ?array
+    {
+        $q = Str::lower($message);
+
+        $asksCost = preg_match('/\b(how\s+much|magkano|ilan|how\s+many)\b/u', $q)
+            && preg_match('/\b(late|undertime|deduct\w*|nabawas|bawas)\b/u', $q);
+
+        if (!$asksCost) {
+            return null;
+        }
+
+        $f = $this->facts->facts();
+        $minutesPerDay = $f['conversion']['minutes_per_day'];
+        $order = $f['payroll']['deduction_order'];
+
+        $year = $this->detectYear($message);
+
+        try {
+            $totals = \App\Models\AccreditedHoursLog::query()
+                ->where('employee_id', $employee->id)
+                ->whereYear('created_at', $year)
+                ->selectRaw('COALESCE(SUM(late_minutes),0) late, COALESCE(SUM(undertime_minutes),0) undertime, COUNT(*) days')
+                ->first();
+        } catch (\Throwable) {
+            return null; // Fall through to the ordinary path rather than guess.
+        }
+
+        $late = (int) ($totals->late ?? 0);
+        $undertime = (int) ($totals->undertime ?? 0);
+
+        if ($late === 0 && $undertime === 0) {
+            return [
+                'answer' => "You have **no late or undertime minutes recorded for {$year}**, so nothing has "
+                    . 'been deducted from your leave credits on that basis.',
+                'follow_up' => ['What is my leave balance?', 'What is my attendance this month?'],
+            ];
+        }
+
+        // The system's own conversion, not a restated formula.
+        $lateDays = CscTimeConversionService::convertMinutesToDays($late);
+        $undertimeDays = CscTimeConversionService::convertMinutesToDays($undertime);
+        $totalDays = $lateDays + $undertimeDays;
+
+        $lines = ["**Your late and undertime for {$year}**", ''];
+
+        if ($late > 0) {
+            $lines[] = "- Late: **{$late} minute(s)** = " . $this->days($lateDays) . ' day(s)';
+        }
+
+        if ($undertime > 0) {
+            $lines[] = "- Undertime: **{$undertime} minute(s)** = " . $this->days($undertimeDays) . ' day(s)';
+        }
+
+        $lines[] = '- Total to be covered by leave credits: **' . $this->days($totalDays) . ' day(s)**';
+        $lines[] = '';
+        $lines[] = "At {$minutesPerDay} minutes = 1 work day, drawn from **" . implode('** then **', $order)
+            . '**. Anything your credits cannot cover becomes LWOP.';
+        $lines[] = '';
+        $lines[] = '_Computed from your accredited-hours log, not estimated._';
+
+        return [
+            'answer' => implode("\n", $lines),
+            'follow_up' => ['What is my leave balance?', 'What is my attendance this month?', 'What is LWOP?'],
+        ];
+    }
+
+    /** Leave-credit days are carried to 4 decimals by the CSC conversion. */
+    private function days(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 4, '.', ''), '0'), '.') ?: '0';
+    }
+
+    private function detectYear(string $message): int
+    {
+        return preg_match('/\b(20\d{2})\b/', $message, $m) ? (int) $m[1] : (int) date('Y');
+    }
+
+    private function getPolicyAnswer(Employee $employee, string $question): ?array
+    {
+        $q = Str::lower($question);
+
+        // Read, never written into the sentence — see HrPolicyFactsService.
+        $f = $this->facts->facts();
+        $minutesPerDay = $f['conversion']['minutes_per_day'];
+        $grace = $f['attendance']['grace_minutes'];
+        $order = $f['payroll']['deduction_order'];
+        $orderText = '**' . implode('** first, then **', $order) . '**';
+
+        if (preg_match('/\b(late|na-late|nalate)\b/u', $q)) {
+            return [
+                'answer' => "Late deduction is automatic: late minutes are taken from {$orderText}. "
+                    . "The system uses **{$minutesPerDay} minutes = 1 work day**. There is a "
+                    . "**{$grace}-minute grace period** after your scheduled AM and PM time-in. "
+                    . 'If leave credits cannot cover the late time, the remainder becomes **LWOP** (Leave Without Pay).',
+                'follow_up' => ['How much leave did my late cost?', 'What is my leave balance?', 'What are the working hours?'],
+            ];
+        }
+
+        if (preg_match('/\b(grace\s*period|grace)\b/u', $q)) {
+            $s = $this->facts->scheduleFor($employee);
+
+            return [
+                'answer' => "The grace period is **{$grace} minutes** after AM In (**{$s['am_in']}**) and "
+                    . "PM In (**{$s['pm_in']}**) on {$s['source']}. Clocking in within that window is not "
+                    . 'counted as late.',
+                'follow_up' => ['How is late deduction calculated?', 'What are my attendance records?'],
+            ];
+        }
+
+        if (preg_match('/\b(lwop|leave without pay)\b/u', $q)) {
+            return [
+                'answer' => '**LWOP (Leave Without Pay)** applies when your late or undertime minutes exceed '
+                    . 'your available ' . implode('/', $order) . ' credits. Those uncovered minutes reduce '
+                    . 'your accredited hours and your pay for that day.',
+                'follow_up' => ['How much leave did my late cost?', 'What is my leave balance?'],
+            ];
+        }
+
+        if (preg_match('/\b(working hours|schedule|oras ng trabaho)\b/u', $q)) {
+            $s = $this->facts->scheduleFor($employee);
+            $hours = $f['conversion']['hours_per_day'];
+
+            return [
+                'answer' => "Your schedule: **AM {$s['am_in']}–{$s['am_out']}**, "
+                    . "**PM {$s['pm_in']}–{$s['pm_out']}** ({$hours} hours total), from {$s['source']}.",
+                'follow_up' => ['How do I file leave?', 'View my attendance'],
+            ];
+        }
+
+        if (preg_match('/\b(how to|paano|file|submit|apply).*\b(leave|bakasyon)\b/u', $q)) {
+            return [
+                'answer' => "To file leave in HRIS:\n1. Open **Leave & Benefits**\n2. Tap **File Leave**\n3. Choose leave type and dates (working days only)\n4. Enter your reason and attach a document if required\n5. Submit—status will be **Pending** until HR approves",
+                'follow_up' => ['What is my leave balance?', 'How is late deduction calculated?'],
+            ];
+        }
+
+        if (preg_match('/\b(how to|paano).*\b(payslip|payroll|sweldo)\b/u', $q)) {
+            return [
+                'answer' => 'Open the **Payslip** section in the app or portal to see your pay periods, basic pay, deductions, and net pay. You can view details for each period there.',
+                'follow_up' => ['What is my latest payslip?', 'What are my deductions?'],
+            ];
+        }
+
+        if (preg_match('/\b(how to|paano).*\b(training|seminar)\b/u', $q)) {
+            return [
+                'answer' => 'Go to **Training** → **Add New Training**. Upload your certificate (PDF/image), fill in the seminar details and reference document number, then submit for HR verification. Only **verified** hours count toward your annual L&D goal.',
+                'follow_up' => ['How many training hours do I have?', 'What is my training status?'],
+            ];
+        }
+
+        if (preg_match('/\b(how to|paano).*\b(travel order|travel)\b/u', $q)) {
+            return [
+                'answer' => 'Open **Travel Orders** → **File Travel**. Enter destination, purpose, travel dates, transportation mode, and optional budget. Submit for approval—only **pending** orders can be cancelled.',
+                'follow_up' => ['What are my travel orders?', 'How do I file leave?'],
+            ];
+        }
+
+        // Rule questions ("can I monetize", "how is the amount computed") are
+        // answered from the live config here; record questions ("my
+        // monetization status", "show my requests", bare "my monetization
+        // requests") carry a record marker — or no rule verb at all — and flow
+        // past into the monetization intent and its context below.
+        if (preg_match('/\bmonetiz\w*\b/u', $q)
+            && !preg_match('/\b(status|balance|show|list|display|history|how many|count|pending|approved|disapproved|cancelled)\b/u', $q)
+            && preg_match('/\b(can|how|eligible|formula|comput\w+|convert|file|apply|submit|paano|mean|process|policy|rule|what\s+is|cash|work)\b/u', $q)) {
+            return $this->monetizationPolicyAnswer();
+        }
+
+        return null;
+    }
+
+    /**
+     * How monetization works, from the live config and the model's own
+     * formula. Reached for rule questions ("can I monetize my leave", "how is
+     * the amount computed"); record questions about the caller's own requests
+     * flow past this into the monetization intent and its context below.
+     *
+     * @return array{answer: string, follow_up: array<int, string>}
+     */
+    private function monetizationPolicyAnswer(): array
+    {
+        $m = $this->facts->monetization();
+
+        if (empty($m['codes'])) {
+            return [
+                'answer' => 'I could not read the monetization configuration just now, so I would rather '
+                    . 'not describe the rules from memory. Please try again shortly.',
+                'follow_up' => ['What are my monetization requests?'],
+            ];
+        }
+
+        $codes = implode(' and ', $m['codes']);
+        $cf = rtrim(rtrim(number_format($m['constant_factor'], 7, '.', ''), '0'), '.');
+
+        $answer = "**Monetization** converts your {$codes} credits to cash:\n"
+            . "1. Open **Leave & Benefits → My Monetization**\n"
+            . "2. Tap **+ Request Monetization**, enter the VL/SL days and your reason\n"
+            . "3. Submit — status stays **Pending** until HR approves\n"
+            . "4. Amount = **monthly salary × days × {$cf}** (computed by the system, not by hand)\n"
+            . 'Approval deducts those days from your balances; a disapproved request deducts nothing. '
+            . 'You can cancel your own request while it is still pending.';
+
+        return [
+            'answer' => $answer,
+            'follow_up' => ['What are my monetization requests?', 'How is my monetization amount computed?', 'What is my leave balance?'],
+        ];
+    }
+
+    private function detectIntent(string $message): string
+    {
+        $q = Str::lower($message);
+
+        if (preg_match('/\b(profile|who am i|my info|employee id|position|department)\b/u', $q)) {
+            return 'profile';
+        }
+        if (preg_match('/\b(leave|vacation|vl|sl|sick|bakasyon|bakasyon)\b/u', $q)) {
+            return 'leave';
+        }
+        // Before the leave rule: "monetize my VL" names a leave code, but the
+        // question is about the cash conversion, not the leave itself.
+        if (preg_match('/\bmonetiz\w*\b/u', $q)) {
+            return 'monetization';
+        }
+        if (preg_match('/\b(payslip|payroll|salary|net pay|sweldo|sahod|deduction)\b/u', $q)) {
+            return 'payslip';
+        }
+        if (preg_match('/\b(attendance|dtr|time record|present|absent|late|undertime)\b/u', $q)) {
+            return 'attendance';
+        }
+        if (preg_match('/\b(training|seminar|l&d|learning)\b/u', $q)) {
+            return 'training';
+        }
+        if (preg_match('/\b(travel order|official travel|travel)\b/u', $q)) {
+            return 'travel';
+        }
+        if (preg_match('/\b(performance|evaluation|rating|ipcr)\b/u', $q)) {
+            return 'performance';
+        }
+        if (preg_match('/\b(how to|paano|what is|explain|system|process|policy|rule)\b/u', $q)) {
+            return 'system';
+        }
+
+        return 'general';
+    }
+
+    private function buildEmployeeContext(Employee $employee, string $intent, string $message): string
+    {
+        $employee->loadMissing([
+            'employmentDetail.designationRelation',
+            'employmentDetail.departmentRelation',
+            'user',
+        ]);
+
+        $lines = [];
+        $lines[] = '=== EMPLOYEE (logged-in user only) ===';
+        $lines[] = 'Name: ' . trim($employee->first_name . ' ' . $employee->last_name);
+        $lines[] = 'Employee ID: ' . ($employee->employee_id ?? 'N/A');
+        $lines[] = 'Position: ' . ($employee->employmentDetail?->designationRelation?->title
+            ?? $employee->employmentDetail?->position ?? 'N/A');
+        $lines[] = 'Department: ' . ($employee->employmentDetail?->departmentRelation?->name ?? 'N/A');
+        $lines[] = 'Employment status: ' . ($employee->employmentDetail?->employment_status ?? 'N/A');
+
+        $year = (int) date('Y');
+
+        if (in_array($intent, ['leave', 'general', 'system'], true)) {
+            $lines[] = $this->leaveContext($employee->id, $year);
+        }
+        if (in_array($intent, ['payslip', 'general'], true)) {
+            $lines[] = $this->payslipContext($employee->id);
+        }
+        if (in_array($intent, ['attendance', 'general'], true)) {
+            $lines[] = $this->attendanceContext($employee->id);
+        }
+        if (in_array($intent, ['training', 'general'], true)) {
+            $lines[] = $this->trainingContext($employee->id);
+        }
+        if (in_array($intent, ['travel', 'general'], true)) {
+            $lines[] = $this->travelContext($employee->id);
+        }
+        if (in_array($intent, ['monetization', 'general'], true)) {
+            $lines[] = $this->monetizationContext($employee->id);
+        }
+
+        $lines[] = '=== SYSTEM KNOWLEDGE (share when relevant) ===';
+        $lines[] = $this->knowledge($employee);
+
+        return implode("\n", array_filter($lines));
+    }
+
+    private function leaveContext(int $employeeId, int $year): string
+    {
+        // Deliberately NOT filtered to $year. Balance rows are not rewritten
+        // each January, so an employee's live credits can be stored under an
+        // older year — and this filter used to answer "walang leave balances"
+        // to someone whose own Leave & Benefits page was showing 136.25 SL
+        // days. LeaveBalance::currentFor() is the same selection that page
+        // makes, so the two can no longer disagree.
+        $balances = LeaveBalance::currentFor($employeeId)
+            ->filter(fn (LeaveBalance $b) => (float) $b->total_credits > 0)
+            ->values();
+
+        $balances->load('leaveType:leave_code,leave_name');
+
+        $out = "\n=== YOUR CURRENT LEAVE BALANCES ===\n";
+        if ($balances->isEmpty()) {
+            $out .= "No leave balances on file.\n";
+        } else {
+            foreach ($balances as $b) {
+                $name = $b->leaveType->leave_name ?? $b->leave_code;
+                $out .= sprintf(
+                    "- %s (%s): %.2f available, %.2f used, %.2f pending (total credits %.2f, as of FY %d)\n",
+                    $name,
+                    $b->leave_code,
+                    $b->available_credits,
+                    $b->used_credits,
+                    $b->pending_credits,
+                    $b->total_credits,
+                    $b->year
+                );
+            }
+        }
+
+        $apps = LeaveApplication::where('employee_id', $employeeId)
+            ->with('leaveType')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        $out .= "\n=== YOUR RECENT LEAVE REQUESTS (latest 5) ===\n";
+        if ($apps->isEmpty()) {
+            $out .= "No leave applications on file.\n";
+        } else {
+            foreach ($apps as $app) {
+                $out .= sprintf(
+                    "- %s: %s to %s, %.1f day(s), status: %s\n",
+                    $app->leaveType->leave_name ?? $app->leave_code,
+                    $app->start_date->format('Y-m-d'),
+                    $app->end_date->format('Y-m-d'),
+                    $app->number_of_days,
+                    $app->status
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    private function payslipContext(int $employeeId): string
+    {
+        $payslips = SalaryComputation::where('employee_id', $employeeId)
+            ->orderByDesc('period_end')
+            ->limit(3)
+            ->get();
+
+        $out = "\n=== YOUR PAYSLIPS (latest 3 periods) ===\n";
+        if ($payslips->isEmpty()) {
+            $out .= "No payslip records found.\n";
+        } else {
+            foreach ($payslips as $p) {
+                $ded = (float) ($p->late_deduction ?? 0) + (float) ($p->undertime_deduction ?? 0) + (float) ($p->other_deductions ?? 0);
+
+                // Thousands separators come from number_format, not sprintf:
+                // PHP has no `%,.2f` flag (that is C/Python), and passing one
+                // throws "Unknown format specifier" — which is what turned
+                // every "show my latest payslip" into a generic error.
+                $out .= sprintf(
+                    "- %s to %s: Basic PHP %s, Deductions PHP %s, Net PHP %s (%s)\n",
+                    $p->period_start->format('M d, Y'),
+                    $p->period_end->format('M d, Y'),
+                    number_format((float) $p->basic_pay, 2),
+                    number_format($ded, 2),
+                    number_format((float) $p->net_pay, 2),
+                    $p->status ?? 'processed'
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    private function attendanceContext(int $employeeId): string
+    {
+        $start = Carbon::now()->startOfMonth();
+        $end = Carbon::now();
+
+        $records = Attendance::where('employee_id', $employeeId)
+            ->whereBetween('date', [$start, $end])
+            ->orderByDesc('date')
+            ->limit(15)
+            ->get();
+
+        $present = 0;
+        $incomplete = 0;
+        foreach ($records as $r) {
+            if ($r->am_in && $r->pm_out) {
+                $present++;
+            } else {
+                $incomplete++;
+            }
+        }
+
+        $out = "\n=== YOUR ATTENDANCE (current month) ===\n";
+        $out .= sprintf(
+            "Days with records: %d | Complete logs (AM in + PM out): %d | Incomplete: %d\n",
+            $records->count(),
+            $present,
+            $incomplete
+        );
+
+        if ($records->isNotEmpty()) {
+            $out .= "Recent DTR entries:\n";
+            foreach ($records->take(5) as $r) {
+                $out .= sprintf(
+                    "- %s: AM %s–%s, PM %s–%s, accredited %s hrs\n",
+                    $r->date->format('Y-m-d'),
+                    $r->am_in ?? '—',
+                    $r->am_out ?? '—',
+                    $r->pm_in ?? '—',
+                    $r->pm_out ?? '—',
+                    $r->accredited_hours !== null ? number_format($r->accredited_hours / 60, 1) : '0'
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    private function trainingContext(int $employeeId): string
+    {
+        $trainings = Training::where('employee_id', $employeeId)
+            ->orderByDesc('date_from')
+            ->limit(5)
+            ->get();
+
+        $verifiedHours = Training::where('employee_id', $employeeId)
+            ->where('status', 'verified')
+            ->sum('hours');
+
+        $out = "\n=== YOUR TRAINING / L&D ===\n";
+        $out .= sprintf("Verified L&D hours (all time): %d of 40 annual goal\n", (int) $verifiedHours);
+
+        if ($trainings->isEmpty()) {
+            $out .= "No training records on file.\n";
+        } else {
+            $out .= "Recent programs:\n";
+            foreach ($trainings as $t) {
+                $out .= sprintf(
+                    "- %s (%s to %s): %d hrs, status: %s\n",
+                    $t->title,
+                    $t->date_from?->format('Y-m-d') ?? '?',
+                    $t->date_to?->format('Y-m-d') ?? '?',
+                    $t->hours,
+                    $t->status
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The caller's travel orders — both the ones they filed and the ones they
+     * were invited on.
+     *
+     * A travel order is not necessarily a solo trip: `travel_orders.employee_id`
+     * is the principal, and everyone else is a row in travel_order_companions
+     * with their own accept/reject. Reading only the principal column meant an
+     * employee added to a colleague's trip saw "No travel orders on file", and
+     * anyone asking "sino ang kasama ko?" got their destination and dates back
+     * with the companions — the substance of the question — absent.
+     */
+    private function travelContext(int $employeeId): string
+    {
+        $orders = TravelOrder::with(['companions.employee:id,first_name,last_name'])
+            ->where(function ($q) use ($employeeId) {
+                $q->where('employee_id', $employeeId)
+                    ->orWhereHas('companions', fn ($c) => $c->where('employee_id', $employeeId));
+            })
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        $out = "\n=== YOUR TRAVEL ORDERS (latest 5, including trips you were added to) ===\n";
+
+        if ($orders->isEmpty()) {
+            $out .= "No travel orders on file.\n";
+
+            return $out;
+        }
+
+        foreach ($orders as $o) {
+            $out .= sprintf(
+                "- %s: %s to %s, %d day(s), status: %s%s\n",
+                $o->destination,
+                $o->travel_date->format('Y-m-d'),
+                $o->return_date->format('Y-m-d'),
+                $o->duration,
+                $o->status,
+                (int) $o->employee_id === $employeeId ? ' (you filed this)' : ' (you are a companion)'
+            );
+
+            foreach ($o->companions as $companion) {
+                $name = trim(($companion->employee->first_name ?? '') . ' ' . ($companion->employee->last_name ?? ''));
+
+                $out .= sprintf(
+                    "    companion: %s — %s\n",
+                    $name !== '' ? $name : 'employee #' . $companion->employee_id,
+                    $companion->status
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The caller's own conversion requests, latest first. Amounts come from
+     * the stored computed_amount — the pesos the system calculated — never
+     * recomputed here.
+     */
+    private function monetizationContext(int $employeeId): string
+    {
+        $requests = \App\Models\MonetizationRequest::where('employee_id', $employeeId)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        $out = "\n=== YOUR MONETIZATION REQUESTS (latest 5) ===\n";
+
+        if ($requests->isEmpty()) {
+            $out .= "No monetization requests on file.\n";
+
+            return $out;
+        }
+
+        foreach ($requests as $r) {
+            $days = (float) $r->vl_days + (float) $r->sl_days;
+
+            $out .= sprintf(
+                "- %s: filed %s, %.2f day(s) (VL %.2f + SL %.2f), PHP %s, status: %s%s\n",
+                $r->request_number ?? ('request #' . $r->id),
+                $r->created_at?->format('Y-m-d') ?? 'unknown date',
+                $days,
+                (float) $r->vl_days,
+                (float) $r->sl_days,
+                number_format((float) $r->computed_amount, 2),
+                $r->status,
+                $r->status === 'disapproved' && $r->approver_remarks
+                    ? ' — reason: ' . $r->approver_remarks
+                    : ''
+            );
+        }
+
+        return $out;
+    }
+
+    private function generateResponse(string $message, string $context, Employee $employee, string $intent = 'general'): string
+    {
+        $prompt = <<<PROMPT
+You are the HRIS assistant for a single municipal employee using the mobile app.
+
+STRICT RULES:
+1. Answer ONLY using "EMPLOYEE (logged-in user only)" data and "SYSTEM KNOWLEDGE" below.
+2. NEVER invent numbers—use exact values from the context.
+3. NEVER provide information about other employees, departments' staff lists, or organization-wide counts.
+4. If the user asks about other people, refuse politely and offer help with their own records or system how-to.
+5. For policy/process questions, use SYSTEM KNOWLEDGE.
+6. Use Philippine Peso (PHP) for money. Be concise (3–6 sentences). Match Tagalog or English to the user's language.
+7. You may use **bold** for emphasis.
+8. Answer ONLY within your scope: this employee's own HR records, HR policies, the municipality's services, and how this system is used. If the question is about anything else — programming or code in any language, mathematics, general knowledge, or any other off-topic subject — refuse briefly and invite an in-scope question instead. Never answer it, not even partly, and never write code.
+
+{$context}
+
+Employee's question: "{$message}"
+PROMPT;
+
+        $content = AiChatService::complete($employee->user, $prompt, 0.5, 450);
+
+        return $content !== null ? trim($content) : $this->fallbackResponse($context, $intent);
+    }
+
+    /**
+     * The answer when the narration model is unreachable.
+     *
+     * buildEmployeeContext() has already run every query the question needs —
+     * the balances, the payslips, the DTR rows — and the old version of this
+     * threw all of it away for "try asking something like 'What is my leave
+     * balance?'", which is what the employee had just asked. Worse, it only
+     * looked for the leave section, so `payslip`, `attendance`, `training` and
+     * `travel` intents fell to that suggestion despite their rows sitting in
+     * $context unread.
+     *
+     * The prose is what was lost, not the data. So render the data.
+     */
+    private function fallbackResponse(string $context, string $intent): string
+    {
+        $sections = $this->ownRecordSections($context);
+
+        if ($sections === '') {
+            return 'I could not reach your records just now. Please try again in a moment — and if it keeps '
+                . 'happening, let HR know so they can check the system.';
+        }
+
+        $lead = match ($intent) {
+            'leave' => 'Here is what your leave records show:',
+            'payslip' => 'Here is what your payroll records show:',
+            'attendance' => 'Here is what your attendance records show:',
+            'training' => 'Here is what your training records show:',
+            'travel' => 'Here is what your travel records show:',
+            'monetization' => 'Here is what your monetization records show:',
+            'profile' => 'Here is what your employee record shows:',
+            default => 'Here is what your records show:',
+        };
+
+        return $lead . "\n\n" . $sections;
+    }
+
+    /**
+     * The "=== YOUR … ===" blocks of the context — the caller's own rows, and
+     * nothing else. The employee header and the system knowledge block are
+     * written for the model, not for a reader.
+     */
+    private function ownRecordSections(string $context): string
+    {
+        if (!preg_match_all(
+            '/^=== YOUR .*?===$.*?(?=^=== |\z)/ms',
+            $context,
+            $matches
+        )) {
+            return '';
+        }
+
+        $blocks = array_map(function (string $block) {
+            // "=== YOUR CURRENT LEAVE BALANCES ===" → "**Your current leave balances**"
+            return trim(preg_replace_callback(
+                '/^=== YOUR (.*?) ===$/m',
+                fn (array $m) => '**Your ' . strtolower(trim($m[1])) . '**',
+                trim($block)
+            ) ?? '');
+        }, $matches[0]);
+
+        return implode("\n\n", array_filter($blocks));
+    }
+
+    private function defaultFollowUps(): array
+    {
+        return [
+            'What is my leave balance?',
+            'How do I file a leave request?',
+            'Show my latest payslip',
+        ];
+    }
+
+    private function followUpsForIntent(string $intent): array
+    {
+        return match ($intent) {
+            'leave' => ['How do I file leave?', 'What are my pending leave requests?', 'How is late deduction calculated?'],
+            'payslip' => ['What is my latest net pay?', 'How do I view payslip in the app?'],
+            'attendance' => ['What is my attendance this month?', 'What is the grace period?'],
+            'training' => ['How many verified training hours do I have?', 'How do I add training?'],
+            'travel' => ['What are my travel orders?', 'How do I file a travel order?'],
+            'monetization' => ['What are my monetization requests?', 'How do I file a monetization request?', 'How is my monetization amount computed?'],
+            default => $this->defaultFollowUps(),
+        };
+    }
+}
