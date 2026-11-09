@@ -41,7 +41,24 @@ h2{font-size:1.7rem;margin:0 0 .6em}h3{font-size:1.1rem;margin:1.2em 0 .3em}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
 .card h3{margin-top:0}.card p{margin:0;color:var(--muted);font-size:.95rem}
 ol.steps{padding-left:1.2em}ol.steps li{margin:.5em 0}
-.shot{aspect-ratio:16/10;display:grid;place-items:center;text-align:center;color:var(--muted);background:repeating-linear-gradient(45deg,var(--card),var(--card) 12px,var(--bg2) 12px,var(--bg2) 24px);border:1px dashed var(--line);border-radius:10px;padding:12px;font-size:.9rem}
+.shot{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .15s}
+.shot:hover{border-color:var(--accent)}
+.shot img{display:block;width:100%;height:auto}
+.shot figcaption{padding:0 14px 12px}
+.shot figcaption h3{margin:.7em 0 .15em;font-size:1rem}
+.shot-link{display:block;cursor:zoom-in;line-height:0}
+.shot-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.lightbox{position:fixed;margin:auto;width:auto;max-width:min(96vw,1400px);max-height:94vh;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg2);color:var(--text);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.lightbox[open]{display:flex;flex-direction:column}
+.lightbox::backdrop{background:rgba(4,10,24,.86);backdrop-filter:blur(4px)}
+.lightbox img{display:block;width:auto;height:auto;max-width:100%;max-height:calc(94vh - 58px);margin:auto;background:#0a1220}
+.lb-bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line);background:var(--card);font-size:.9rem;color:var(--muted)}
+.lb-bar strong{color:var(--text);font-weight:600;margin-right:auto}
+.lb-btn{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:1.15rem;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s,border-color .15s}
+.lb-btn:hover,.lb-btn:focus-visible{background:var(--accent);border-color:var(--accent);color:#06142c;outline:none}
+.lb-close{position:absolute;top:10px;right:10px;background:rgba(11,22,48,.85);backdrop-filter:blur(4px)}
+.lb-close:hover,.lb-close:focus-visible{background:var(--accent);border-color:var(--accent);color:#06142c}
+@media (max-width:560px){.lightbox{max-width:96vw}.lb-bar{font-size:.82rem;padding:8px 10px}}
 .scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:480px}
 th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}th{color:var(--accent2);font-size:.85rem;text-transform:uppercase}
@@ -74,7 +91,7 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 <h1>PrimeHR Pagsanjan</h1>
 <p class="sub">A web human resource information system for the Municipal Government of Pagsanjan, Laguna. One employee record connects the 201 file, daily time record, leave, travel orders, payroll, trainings and recruitment.</p>
 <div class="btns">
-<a class="btn primary" href="#problems">Explore the features</a>
+<a class="btn primary" href="#screens">Explore the features</a>
 <a class="btn ghost" href="https://github.com/angieee0123/PrimeHrProject-Pagsanjan">View the repository</a>
 </div>
 <ul class="stats">
@@ -96,7 +113,7 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 <section id="team">
 <h2>Research team and adviser</h2>
 <div class="grid">
-<div class="card"><h3>Borje, Princess Leriraine O.</h3><p>Researcher</p></div>
+<div class="card"><h3>Borje, Princess Leriraine S.</h3><p>Researcher</p></div>
 <div class="card"><h3>Cuevas, Angelica D.</h3><p>Researcher</p></div>
 <div class="card"><h3>Demerin, Luke Jeremy O.</h3><p>Researcher</p></div>
 <div class="card"><h3>Villarica, Mia V., DIT</h3><p>Thesis adviser and Associate Dean, College of Computer Studies</p></div>
@@ -112,7 +129,7 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 </section>
 
 <section id="system">
-<h2>System development</h2>
+<h2>Methodology</h2>
 <h3>Design and Data</h3>
 <p>The study utilized a developmental research design to design, develop, test, and evaluate an AI-driven Human Resource Information System (HRIS) for the Municipality of Pagsanjan, Laguna. The respondents consisted of the Administrator, Regular, Casual, Job Order, and Co-terminus Employees, totaling 132 total respondents, with data gathered through interviews, brainstorming, observation, internet research, document collection, and surveys. A structured System User Evaluation Questionnaire based on the study’s objectives and selected ISO/IEC 25010:2023 software quality characteristics was used to assess the developed HRIS.</p>
 <h3>System Development</h3>
@@ -149,13 +166,12 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 </div>
 <h3>Screenshots</h3>
 <div class="grid">
-<figure style="margin:0"><div class="shot">Add a public homepage screenshot</div><figcaption><h3>Public homepage</h3></figcaption></figure>
-<figure style="margin:0"><div class="shot">Add a sign-in screenshot</div><figcaption><h3>Sign-in</h3></figcaption></figure>
-<figure style="margin:0"><div class="shot">Add an admin dashboard screenshot</div><figcaption><h3>Admin dashboard</h3></figcaption></figure>
-<figure style="margin:0"><div class="shot">Add an employee 201 record screenshot</div><figcaption><h3>Employee 201 record</h3></figcaption></figure>
-<figure style="margin:0"><div class="shot">Add an attendance kiosk screenshot</div><figcaption><h3>Attendance kiosk</h3></figcaption></figure>
-<figure style="margin:0"><div class="shot">Add a leave calendar screenshot</div><figcaption><h3>Leave calendar</h3></figcaption></figure>
-<figure style="margin:0"><div class="shot">Add a recruitment ranking screenshot</div><figcaption><h3>Recruitment ranking</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/landing.png" aria-label="View full-size screenshot: Public homepage"><img src="assets/img/landing.png" alt="Public homepage of the PrimeHR Pagsanjan website" width="1920" height="922" loading="lazy"></a><figcaption><h3>Public homepage</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/sign-in.png" aria-label="View full-size screenshot: Sign-in"><img src="assets/img/sign-in.png" alt="Sign-in screen of the PrimeHR Pagsanjan web application" width="1919" height="916" loading="lazy"></a><figcaption><h3>Sign-in</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/admin-dashboard.png" aria-label="View full-size screenshot: Admin dashboard"><img src="assets/img/admin-dashboard.png" alt="Admin dashboard with HR summary cards and charts" width="1920" height="926" loading="lazy"></a><figcaption><h3>Admin dashboard</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/employee-201.png" aria-label="View full-size screenshot: Employee 201 record"><img src="assets/img/employee-201.png" alt="Employee 201 record page with personnel information" width="1920" height="923" loading="lazy"></a><figcaption><h3>Employee 201 record</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/dtr.png" aria-label="View full-size screenshot: DTR record"><img src="assets/img/dtr.png" alt="Daily time record page with attendance entries" width="1916" height="923" loading="lazy"></a><figcaption><h3>DTR record</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/leave-calendar.png" aria-label="View full-size screenshot: Leave calendar"><img src="assets/img/leave-calendar.png" alt="Leave calendar showing approved leave across the month" width="1920" height="925" loading="lazy"></a><figcaption><h3>Leave calendar</h3></figcaption></figure>
 </div>
 </section>
 
@@ -190,5 +206,62 @@ Municipal Government of Pagsanjan, Laguna &middot; Poblacion, Pagsanjan, Laguna 
 Built for the Human Resources Management Office (HRMO), Pagsanjan, Laguna.
 <small>Demo records are synthetic. The municipal seal is the property of the Municipal Government of Pagsanjan.</small>
 </footer>
+
+<dialog class="lightbox" id="lightbox" aria-labelledby="lb-caption">
+<button class="lb-btn lb-close" type="button" aria-label="Close full-size view">&times;</button>
+<img id="lb-img" src="assets/img/landing.png" alt="">
+<div class="lb-bar">
+<strong id="lb-caption" aria-live="polite">Public homepage</strong>
+<span id="lb-count" aria-hidden="true">1 / 6</span>
+<button class="lb-btn lb-prev" type="button" aria-label="Previous screenshot">&lsaquo;</button>
+<button class="lb-btn lb-next" type="button" aria-label="Next screenshot">&rsaquo;</button>
+</div>
+</dialog>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.shot-link'));
+  var box = document.getElementById('lightbox');
+  if (!links.length || !box || typeof box.showModal !== 'function') return;
+
+  var pic = document.getElementById('lb-img');
+  var cap = document.getElementById('lb-caption');
+  var num = document.getElementById('lb-count');
+  var current = 0;
+
+  function show(n) {
+    current = (n + links.length) % links.length;
+    var link = links[current];
+    var thumb = link.querySelector('img');
+    var title = link.closest('figure').querySelector('h3');
+
+    pic.src = link.getAttribute('href');
+    pic.alt = thumb ? thumb.alt : '';
+    if (title) cap.textContent = title.textContent;
+    num.textContent = (current + 1) + ' / ' + links.length;
+  }
+
+  links.forEach(function (link, n) {
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      show(n);
+      box.showModal();
+    });
+  });
+
+  box.querySelector('.lb-close').addEventListener('click', function () { box.close(); });
+  box.querySelector('.lb-prev').addEventListener('click', function () { show(current - 1); });
+  box.querySelector('.lb-next').addEventListener('click', function () { show(current + 1); });
+
+  box.addEventListener('click', function (event) {
+    if (event.target === box) box.close();
+  });
+
+  box.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); show(current - 1); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); show(current + 1); }
+  });
+})();
+</script>
 </body>
 </html>
