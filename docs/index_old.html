@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1630">
+<title>PrimeHR Pagsanjan: web and mobile HRIS for Pagsanjan, Laguna</title>
+<meta name="description" content="PRIME-HRIS is the web and mobile Human Resource Information System of the Municipal Government of Pagsanjan, Laguna: employee 201 records, attendance, leave, payroll, travel orders, trainings, recruitment and an AI assistant.">
+<meta property="og:title" content="PrimeHR Pagsanjan">
+<meta property="og:description" content="Web and mobile HRIS for the Municipal Government of Pagsanjan, Laguna.">
+<meta property="og:type" content="website">
+<link rel="icon" href="assets/img/pagsanjan-seal.jpg">
+<style>
+:root{--bg:#0b1630;--bg2:#12214a;--card:#16264f;--text:#e8edf8;--muted:#9fb0d3;--accent:#5eb3ff;--accent2:#7ee0c3;--line:#26396b}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.65}
+a{color:var(--accent)}
+.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;background:#fff;color:#000;padding:8px;z-index:20}
+header{position:sticky;top:0;z-index:10;background:rgba(11,22,48,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav{max-width:1080px;margin:auto;display:flex;align-items:center;gap:20px;padding:12px 20px;flex-wrap:wrap}
+nav .brand{font-weight:700;color:var(--text);text-decoration:none;font-size:1.1rem;margin-right:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:.92rem}nav a:hover{color:var(--accent)}
+main{max-width:1080px;margin:auto;padding:0 20px}
+section{padding:56px 0;border-bottom:1px solid var(--line)}
+.hero{padding:80px 0 56px}
+.seal{width:66px;height:66px;border-radius:50%;border:2px solid var(--line);background:#fff;padding:2px;margin-bottom:14px;display:block}
+.eyebrow{color:var(--accent2);font-size:.85rem;letter-spacing:.06em;text-transform:uppercase}
+h1{font-size:clamp(2.4rem,6vw,4rem);margin:.2em 0 .15em;line-height:1.1}
+h2{font-size:1.7rem;margin:0 0 .6em}h3{font-size:1.1rem;margin:1.2em 0 .3em}
+.sub{color:var(--muted);font-size:1.15rem;max-width:760px}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.btn{display:inline-block;padding:11px 20px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid var(--accent)}
+.btn.primary{background:var(--accent);color:#06142c}.btn.ghost{color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:36px;padding:0;list-style:none}
+.stats li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.stats strong{display:block;font-size:1.05rem;color:var(--accent2)}
+.stats span{color:var(--muted);font-size:.92rem}
+.note{background:var(--bg2);border-left:4px solid var(--accent);padding:14px 18px;border-radius:0 8px 8px 0;margin:1.4em 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card h3{margin-top:0}.card p{margin:0;color:var(--muted);font-size:.95rem}
+ol.steps{padding-left:1.2em}ol.steps li{margin:.5em 0}
+.shot{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .15s}
+.shot:hover{border-color:var(--accent)}
+.shot img{display:block;width:100%;height:auto}
+.shot figcaption{padding:0 14px 12px}
+.shot figcaption h3{margin:.7em 0 .15em;font-size:1rem}
+.shot-link{display:block;cursor:zoom-in;line-height:0}
+.shot-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.lightbox{position:fixed;margin:auto;width:auto;max-width:min(96vw,1400px);max-height:94vh;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg2);color:var(--text);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.lightbox[open]{display:flex;flex-direction:column}
+.lightbox::backdrop{background:rgba(4,10,24,.86);backdrop-filter:blur(4px)}
+.lightbox img{display:block;width:auto;height:auto;max-width:100%;max-height:calc(94vh - 58px);margin:auto;background:#0a1220}
+.lb-bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line);background:var(--card);font-size:.9rem;color:var(--muted)}
+.lb-bar strong{color:var(--text);font-weight:600;margin-right:auto}
+.lb-btn{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:1.15rem;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s,border-color .15s}
+.lb-btn:hover,.lb-btn:focus-visible{background:var(--accent);border-color:var(--accent);color:#06142c;outline:none}
+.lb-close{position:absolute;top:10px;right:10px;background:rgba(11,22,48,.85);backdrop-filter:blur(4px)}
+.lb-close:hover,.lb-close:focus-visible{background:var(--accent);border-color:var(--accent);color:#06142c}
+@media (max-width:560px){.lightbox{max-width:96vw}.lb-bar{font-size:.82rem;padding:8px 10px}}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:480px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}th{color:var(--accent2);font-size:.85rem;text-transform:uppercase}
+.links{list-style:none;padding:0;display:grid;gap:12px}
+.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;text-decoration:none;color:var(--text)}
+.links a:hover{border-color:var(--accent)}.links small{display:block;color:var(--muted)}
+footer{max-width:1080px;margin:auto;padding:36px 20px 60px;color:var(--muted);font-size:.92rem}
+footer small{display:block;margin-top:10px;font-size:.82rem}
+
+/* Hero: animated evaluation chart */
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(300px,.94fr);gap:44px;align-items:center}
+.hero-copy{min-width:0}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:30px}}
+.hero-chart{position:relative;margin:0;padding:18px;border:1px solid var(--line);border-radius:16px;background:radial-gradient(130% 130% at 100% 0%,var(--bg2),var(--card) 58%,var(--bg));box-shadow:0 22px 50px rgba(4,10,24,.42);overflow:hidden}
+.hero-chart::before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);transform:scaleX(0);transform-origin:0 50%;transition:transform 1s cubic-bezier(.22,.61,.36,1)}
+.hero-chart.is-loaded::before{transform:scaleX(1)}
+.hc-head{display:flex;align-items:center;gap:14px}
+.hc-ring{position:relative;flex:none;width:92px;height:92px}
+.hc-ring svg{display:block;width:92px;height:92px;transform:rotate(-90deg)}
+.hc-ring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.hc-ring .track{stroke:rgba(232,237,248,.11)}
+.hc-ring .fill{stroke:url(#hcRingGrad);stroke-dasharray:326.73;stroke-dashoffset:8.5;transition:stroke-dashoffset 1.5s cubic-bezier(.22,.61,.36,1)}
+.js .hero-chart:not(.is-loaded) .hc-ring .fill{stroke-dashoffset:326.73}
+.hc-ring-num{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-size:1.28rem;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hc-ring-num small{display:block;margin-top:5px;font-size:.56rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hc-head-copy{min-width:0}
+.hc-kicker{margin:0 0 4px;color:var(--accent2);font-size:.62rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase}
+.hc-title{margin:0;font-size:.98rem;font-weight:600;line-height:1.35}
+.hc-sub{margin:4px 0 0;color:var(--muted);font-size:.76rem;line-height:1.45}
+.hc-bars-title{margin:16px 0 8px;color:var(--muted);font-size:.62rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase}
+.hc-bars{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.hc-bars li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name val" "track track";column-gap:10px;row-gap:4px}
+.hc-name{grid-area:name;color:var(--muted);font-size:.75rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-val{grid-area:val;font-size:.75rem;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums;min-width:2.8em;text-align:right}
+.hc-track{grid-area:track;position:relative;height:5px;border-radius:99px;background:rgba(232,237,248,.09);overflow:hidden}
+.hc-track::after{content:"";position:absolute;top:0;bottom:0;left:84.2%;width:1px;background:rgba(232,237,248,.35)}
+.hc-fill{display:block;height:100%;width:var(--w,0);border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.js .hero-chart .hc-fill{width:0;transition:width 1.05s cubic-bezier(.22,.61,.36,1);transition-delay:calc(var(--i,0) * 75ms)}
+.js .hero-chart.is-loaded .hc-fill{width:var(--w,0)}
+.hc-bars li.is-total .hc-name{color:var(--text);font-weight:600}
+.hc-bars li.is-total .hc-fill{background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.hc-foot{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.71rem;line-height:1.5}
+.hc-foot strong{color:var(--text)}
+@media (prefers-reduced-motion:reduce){.hero-chart::before,.js .hero-chart .hc-fill,.hc-ring .fill{transition:none}}
+
+/* Results */
+.results-table{min-width:640px}
+.results-table th,.results-table td{vertical-align:top}
+.results-table .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.results-table .interp{white-space:nowrap;color:var(--muted)}
+.results-table th.stmt{width:60%;color:var(--text);font-size:.92rem;font-weight:400;line-height:1.5;letter-spacing:normal;text-transform:none}
+.results-table tfoot th{color:var(--text);font-size:.92rem;text-transform:none;letter-spacing:normal}
+.results-table tfoot th,.results-table tfoot td{border-bottom:0;border-top:1px solid var(--line);background:rgba(94,179,255,.08);font-weight:700}
+.results-table tfoot .interp{color:var(--accent2)}
+.data-notes{margin-top:2em;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);font-size:.86rem;color:var(--muted)}
+.data-notes summary{cursor:pointer;color:var(--text);font-weight:600}
+.data-notes ul{margin:.8em 0 0;padding-left:1.1em}
+.data-notes li{margin:.35em 0}
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header>
+<nav aria-label="Primary">
+<a class="brand" href="#top">PrimeHR</a>
+<a href="#overview">Overview</a>
+<a href="#team">Team</a>
+<a href="#problems">Problem</a>
+<a href="#system">Methodology</a>
+<a href="#screens">System</a>
+<a href="#results">Results</a>
+<a href="#links">Links</a>
+</nav>
+</header>
+
+<main id="main">
+<section class="hero" id="top">
+<div class="hero-grid">
+<div class="hero-copy">
+<img class="seal" src="assets/img/pagsanjan-seal.jpg" alt="Seal of the Municipal Government of Pagsanjan" width="66" height="66">
+<p class="eyebrow">Human Resource Information System &middot; Municipality of Pagsanjan, Laguna</p>
+<h1>PrimeHR Pagsanjan</h1>
+<p class="sub">A web human resource information system for the Municipal Government of Pagsanjan, Laguna. One employee record connects the 201 file, daily time record, leave, travel orders, payroll, trainings and recruitment.</p>
+<div class="btns">
+<a class="btn primary" href="#screens">Explore the features</a>
+<a class="btn ghost" href="https://github.com/angieee0123/PrimeHrProject-Pagsanjan">View the repository</a>
+</div>
+</div>
+
+<figure class="hero-chart" id="heroChart" data-score="4.87">
+<div class="hc-head">
+<div class="hc-ring" aria-hidden="true">
+<svg viewBox="0 0 120 120" focusable="false">
+<defs><linearGradient id="hcRingGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5eb3ff"></stop><stop offset="1" stop-color="#7ee0c3"></stop></linearGradient></defs>
+<circle class="track" cx="60" cy="60" r="52"></circle>
+<circle class="fill" cx="60" cy="60" r="52"></circle>
+</svg>
+<span class="hc-ring-num"><span data-count="4.87">4.87</span><small>of 5.00</small></span>
+</div>
+<div class="hc-head-copy">
+<p class="hc-kicker">System user evaluation</p>
+<p class="hc-title">Strongly Agree on every ISO/IEC 25010:2023 criterion</p>
+<p class="hc-sub">132 employee respondents &middot; overall evaluation 4.87</p>
+</div>
+</div>
+
+<p class="hc-bars-title">Total mean by criterion</p>
+<ul class="hc-bars">
+<li><span class="hc-name">Functional suitability</span><span class="hc-val" data-count="4.85">4.85</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97%;--i:0"></span></span></li>
+<li><span class="hc-name">Performance efficiency</span><span class="hc-val" data-count="4.84">4.84</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:96.8%;--i:1"></span></span></li>
+<li><span class="hc-name">Compatibility</span><span class="hc-val" data-count="4.84">4.84</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:96.8%;--i:2"></span></span></li>
+<li><span class="hc-name">Interaction capability</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:3"></span></span></li>
+<li><span class="hc-name">Reliability</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:4"></span></span></li>
+<li><span class="hc-name">Security</span><span class="hc-val" data-count="4.85">4.85</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97%;--i:5"></span></span></li>
+<li><span class="hc-name">Maintainability</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:6"></span></span></li>
+<li><span class="hc-name">Flexibility</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:7"></span></span></li>
+<li><span class="hc-name">Safety</span><span class="hc-val" data-count="4.84">4.84</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:96.8%;--i:8"></span></span></li>
+<li class="is-total"><span class="hc-name">Overall evaluation</span><span class="hc-val" data-count="4.87">4.87</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.4%;--i:9"></span></span></li>
+</ul>
+
+<p class="hc-foot">Tick marks 4.21, the Strongly Agree threshold. Black box testing: <strong>100%</strong> passing rate from 10 IT and system experts.</p>
+</figure>
+</div>
+
+<ul class="stats">
+<li><strong>Web application</strong><span>Laravel 13 and Blade for HR, admin and mayor</span></li>
+<li><strong>MySQL database</strong><span>One record shared by web</span></li>
+<li><strong>4 user roles</strong><span>Employee, HR, admin and mayor</span></li>
+<li><strong>26 offices</strong><span>Municipal departments in the seeded roster</span></li>
+</ul>
+</section>
+
+<section id="overview">
+<h2>What PrimeHR does</h2>
+<p>Personnel records, daily time records, leave applications, travel orders and payroll inputs are usually spread across paper 201 files, spreadsheets and separate logs. Every request moves between offices by hand, and the same employee data is typed more than once.</p>
+<p>PRIME-HRIS brings these tasks into one system. HR and administrators work from a single employee record. The mayor gets a dashboard for approvals and oversight. The web application, mobile API and MySQL database all read and write the same data.</p>
+<p>The system also includes an AI assistant that answers HR questions from the live database, and a recruitment module that parses r&eacute;sum&eacute;s, anonymises applicant data and produces a CSC-weighted, explainable shortlist.</p>
+<p class="note"><strong>Scope.</strong> PrimeHR supports HR operations but does not replace CSC, COA or legal review. Final hiring decisions remain with the Human Resources Management Office. The records used in the repository demo are synthetic test data, not real employees.</p>
+</section>
+
+<section id="team">
+<h2>Research team and adviser</h2>
+<div class="grid">
+<div class="card"><h3>Borje, Princess Leriraine S.</h3><p>Researcher</p></div>
+<div class="card"><h3>Cuevas, Angelica D.</h3><p>Researcher</p></div>
+<div class="card"><h3>Demerin, Luke Jeremy O.</h3><p>Researcher</p></div>
+<div class="card"><h3>Villarica, Mia V., DIT</h3><p>Thesis adviser and Associate Dean, College of Computer Studies</p></div>
+</div>
+<p style="color:var(--muted)">College of Computer Studies, Laguna State Polytechnic University, Santa Cruz Main Campus, Santa Cruz, Laguna. Submitted November 2026 in partial fulfillment of the Bachelor of Science in Information Technology. With thanks to the Human Resources Management Office (HRMO) of Pagsanjan.</p>
+</section>
+
+<section id="problems">
+<h2>Problem statement</h2>
+<p>According to researchers on the HR processes of the municipality, many activities need manual files and processes, making it difficult to capture the information needed in an organized and efficient manner. It may cause scattered and duplicate pieces of information, delays in processing information, difficulties in the monitoring of employee transactions, and a lot of effort to gather and collate data. The absence of a system also makes it difficult to monitor and capture a record of the transactions that happen within the HR processes</p>
+<h3>General objective</h3>
+<p>To design and develop an AI-enabled Human Resource Information System for the Municipality of Pagsanjan, Laguna that integrates the Human Resource functions developed by the researchers and provides provisions for the integration of Recruitment Management, Promotion Management, and Training and Development modules developed through collaboration.</p>
+</section>
+
+<section id="system">
+<h2>Methodology</h2>
+<h3>Design and Data</h3>
+<p>The study utilized a developmental research design to design, develop, test, and evaluate an AI-driven Human Resource Information System (HRIS) for the Municipality of Pagsanjan, Laguna. The respondents consisted of the Administrator, Regular, Casual, Job Order, and Co-terminus Employees, totaling 132 total respondents, with data gathered through interviews, brainstorming, observation, internet research, document collection, and surveys. A structured System User Evaluation Questionnaire based on the study’s objectives and selected ISO/IEC 25010:2023 software quality characteristics was used to assess the developed HRIS.</p>
+<h3>System Development</h3>
+<ol class="steps">
+    <li><strong>Requirement analysis.</strong> Consultations with the HRMO and review of existing government forms: CS Form 6, the DTR, travel orders and pass slips, together with CSC PRIME-HRM and RA 10173 requirements.</li>
+    <li><strong>Design.</strong> Role matrix for employee, HR, admin and mayor; MySQL schema for personnel, attendance, leave, payroll and recruitment; a REST API to serve the client-side.</li>
+    <li><strong>Development.</strong> Laravel web application and the AI assistant.</li>
+    <li><strong>Testing.</strong> 68 PHPUnit unit and feature files covering the QR kiosk, AI scope, leave access, payroll filters and exports; API smoke tests for the recruitment pipeline.</li>
+    <li><strong>Deployment.</strong> Hosted on a physical server on the researcher's personal computer, utilizing a cloudflare tunnel.</li>
+</ol>
+<div class="grid">
+    <div class="card"><h3>Web application</h3><p>Laravel 13 (PHP 8.3+), Blade, Tailwind CSS 4, Vite, Laravel Sanctum</p></div>
+    <div class="card"><h3>Database</h3><p>MySQL 8; SQLite is used for zero-setup local runs and tests</p></div>
+    <div class="card"><h3>AI assistant</h3><p>Natural-language query layer with intent routing, scope guard, policy grounding, document search and charts</p></div>
+    <div class="card"><h3>Tooling</h3><p>PHPUnit, Cloudflared, and Composer/npm</p></div>
+</div>
+<h3>Evaluation</h3>
+<p>The system was assessed by 10 IT and system experts and 132 employees from the Municipality of Pagsanjan, Laguna.</p>
+</section>
+
+<section id="screens">
+<h2>System features and screenshots</h2>
+<h3>Features</h3>
+<div class="grid" style="margin-top:20px">
+<div class="card"><h3>Employee 201 records</h3><p>Profiles, addresses, contacts, family, education, eligibility, work experience, government IDs (GSIS, PhilHealth, Pag-IBIG, TIN), legal requirements, documents and photos.</p></div>
+<div class="card"><h3>Attendance and DTR</h3><p>Schedules, daily time records, QR kiosk punching, corrections, exemptions, late and undertime tracking, plus live accredited-hours and salary logs.</p></div>
+<div class="card"><h3>Leave and benefits</h3><p>Leave types, accrual rates, balances, CS Form 6 applications, approvals, leave calendar and leave monetisation requests.</p></div>
+<div class="card"><h3>Payroll support</h3><p>Salary computations, deduction types and schedules, loans, employee deductions and printable or exportable payslips.</p></div>
+<div class="card"><h3>Travel orders and pass slips</h3><p>Filing, approval, companion responses, history, official forms and printable or downloadable PDFs.</p></div>
+<div class="card"><h3>Training and development</h3><p>Training records, certificates, admin verification and exports for each employee.</p></div>
+<div class="card"><h3>Recruitment and AI screening</h3><p>Vacancies, r&eacute;sum&eacute; upload, parsing, anonymisation, a CSC-weighted Fit Score, ranked shortlists and an audit trail.</p></div>
+<div class="card"><h3>AI assistant and chatbot</h3><p>Natural-language questions over HR data, charts, document search and scope guards that keep answers grounded in Pagsanjan HR policy.</p></div>
+<div class="card"><h3>Reports, exports and audit</h3><p>Personnel, payroll, leave-benefit, deduction, pass-slip and training exports, plus an audit trail of privileged actions.</p></div>
+</div>
+<h3>Screenshots</h3>
+<div class="grid">
+<figure class="shot"><a class="shot-link" href="assets/img/landing.png" aria-label="View full-size screenshot: Public homepage"><img src="assets/img/landing.png" alt="Public homepage of the PrimeHR Pagsanjan website" width="1920" height="922" loading="lazy"></a><figcaption><h3>Public homepage</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/sign-in.png" aria-label="View full-size screenshot: Sign-in"><img src="assets/img/sign-in.png" alt="Sign-in screen of the PrimeHR Pagsanjan web application" width="1919" height="916" loading="lazy"></a><figcaption><h3>Sign-in</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/admin-dashboard.png" aria-label="View full-size screenshot: Admin dashboard"><img src="assets/img/admin-dashboard.png" alt="Admin dashboard with HR summary cards and charts" width="1920" height="926" loading="lazy"></a><figcaption><h3>Admin dashboard</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/employee-201.png" aria-label="View full-size screenshot: Employee 201 record"><img src="assets/img/employee-201.png" alt="Employee 201 record page with personnel information" width="1920" height="923" loading="lazy"></a><figcaption><h3>Employee 201 record</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/dtr.png" aria-label="View full-size screenshot: DTR record"><img src="assets/img/dtr.png" alt="Daily time record page with attendance entries" width="1916" height="923" loading="lazy"></a><figcaption><h3>DTR record</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/leave-calendar.png" aria-label="View full-size screenshot: Leave calendar"><img src="assets/img/leave-calendar.png" alt="Leave calendar showing approved leave across the month" width="1920" height="925" loading="lazy"></a><figcaption><h3>Leave calendar</h3></figcaption></figure>
+</div>
+</section>
+
+<section id="results">
+<h2>Results</h2>
+<h3>Statistical results</h3>
+<p>The System User Evaluation used a five-point scale, interpreted as <strong>Strongly Agree</strong> for a mean from 4.21 to 5.00. The table reports the total mean of each ISO/IEC 25010:2023 criterion with the standard deviation (SD) and verbal interpretation.</p>
+<div class="scroll">
+<table class="results-table">
+<thead><tr><th scope="col">Criterion</th><th scope="col" class="num">Mean</th><th scope="col" class="num">SD</th><th scope="col">Interpretation</th></tr></thead>
+<tbody>
+<tr><th scope="row" class="stmt">Functional suitability</th><td class="num">4.85</td><td class="num">0.40</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Performance efficiency</th><td class="num">4.84</td><td class="num">0.44</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Compatibility</th><td class="num">4.84</td><td class="num">0.42</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Interaction capability</th><td class="num">4.86</td><td class="num">0.36</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Reliability</th><td class="num">4.86</td><td class="num">0.36</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Security</th><td class="num">4.85</td><td class="num">0.41</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Maintainability</th><td class="num">4.86</td><td class="num">0.45</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Flexibility</th><td class="num">4.86</td><td class="num">0.34</td><td class="interp">Strongly Agree</td></tr>
+<tr><th scope="row" class="stmt">Safety</th><td class="num">4.84</td><td class="num">0.43</td><td class="interp">Strongly Agree</td></tr>
+</tbody>
+<tfoot><tr><th scope="row">Overall evaluation</th><td class="num">4.87</td><td class="num">0.34</td><td class="interp">Strongly Agree</td></tr></tfoot>
+</table>
+</div>
+
+<h3>Black box testing</h3>
+<p>Ten (10) IT and system experts performed black box testing on the developed HRIS to determine whether the tested functions operated according to their documented requirements and expected behavior. The prepared test cases covered the functions for HR Personnel, Employees, and System Data Processing and Output. Each actual result was compared with the documented expected result and recorded as either Pass or Fail; no failures were recorded.</p>
+<div class="scroll">
+<table class="results-table">
+<thead><tr><th scope="col">Coverage</th><th scope="col" class="num">Testers</th><th scope="col" class="num">Failed</th><th scope="col" class="num">Passing rate</th></tr></thead>
+<tbody>
+<tr><th scope="row" class="stmt">Overall (HR Personnel, Employees, and System Data Processing and Output)</th><td class="num">10</td><td class="num">0</td><td class="num">100%</td></tr>
+</tbody>
+</table>
+</div>
+
+<details class="data-notes">
+<summary>Notes on the source tables</summary>
+<ul>
+<li>Performance efficiency: the manuscript's discussion also refers to an Item 6 (AI chatbot response time, mean 4.87) that is not among the supplied indicators.</li>
+<li>Maintainability: the supplied table gives a total of 4.86 with a standard deviation of 0.45, while the manuscript states 0.34.</li>
+<li>Flexibility: the supplied table had overlapping columns. The total shown (4.86, SD 0.34) follows the manuscript.</li>
+</ul>
+</details>
+</section>
+
+<section id="links" style="border-bottom:0">
+<h2>Links</h2>
+<ul class="links">
+    <li><a href="https://pusongpagsanjan.com/"><strong>Live system</strong><small>The Pagsanjan HRIS web application, opens at the landing page</small></a></li>
+    <li><a href="https://github.com/angieee0123/PrimeHrProject-Pagsanjan"><strong>Source repository</strong><small>Laravel web app and database setup</small></a></li>
+    <li><a href="https://drive.google.com/file/d/1ebse1FPXMYqsl2ABpv5OIQ5P5eHulPQt/view?usp=drive_link"><strong>Video demo</strong><small>A recorded video showcasing the features and capabilities of Pagsanjan HRIS in a shared Google Drive folder</small></a></li>
+</ul>
+</section>
+</main>
+
+<footer>
+<strong>PrimeHR Pagsanjan</strong><br>
+Municipal Government of Pagsanjan, Laguna &middot; Poblacion, Pagsanjan, Laguna 4008<br>
+Built for the Human Resources Management Office (HRMO), Pagsanjan, Laguna.
+<small>Demo records are synthetic. The municipal seal is the property of the Municipal Government of Pagsanjan.</small>
+</footer>
+
+<dialog class="lightbox" id="lightbox" aria-labelledby="lb-caption">
+<button class="lb-btn lb-close" type="button" aria-label="Close full-size view">&times;</button>
+<img id="lb-img" src="assets/img/landing.png" alt="">
+<div class="lb-bar">
+<strong id="lb-caption" aria-live="polite">Public homepage</strong>
+<span id="lb-count" aria-hidden="true">1 / 6</span>
+<button class="lb-btn lb-prev" type="button" aria-label="Previous screenshot">&lsaquo;</button>
+<button class="lb-btn lb-next" type="button" aria-label="Next screenshot">&rsaquo;</button>
+</div>
+</dialog>
+
+<script>
+(function () {
+  var chart = document.getElementById('heroChart');
+  if (!chart) return;
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var counters = chart.querySelectorAll('[data-count]');
+  var ring = chart.querySelector('.hc-ring .fill');
+  var circumference = 2 * Math.PI * 52;
+  var score = parseFloat(chart.getAttribute('data-score') || '4.87');
+  var played = false;
+
+  function animateNumber(el, target, duration) {
+    var start = null;
+    function frame(now) {
+      if (start === null) start = now;
+      var progress = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = (target * eased).toFixed(2);
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function finalState() {
+    for (var i = 0; i < counters.length; i++) {
+      counters[i].textContent = parseFloat(counters[i].getAttribute('data-count')).toFixed(2);
+    }
+    if (ring) ring.style.strokeDashoffset = String(circumference * (1 - score / 5));
+  }
+
+  function play() {
+    if (played) return;
+    played = true;
+    chart.classList.add('is-loaded');
+
+    if (reduce) return finalState();
+
+    if (ring) ring.style.strokeDashoffset = String(circumference * (1 - score / 5));
+    for (var i = 0; i < counters.length; i++) {
+      animateNumber(counters[i], parseFloat(counters[i].getAttribute('data-count')), 1200);
+    }
+  }
+
+  if (!reduce) {
+    for (var z = 0; z < counters.length; z++) counters[z].textContent = '0.00';
+  }
+
+  if (reduce || !('IntersectionObserver' in window)) {
+    play();
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      for (var e = 0; e < entries.length; e++) {
+        if (entries[e].isIntersecting) { play(); io.disconnect(); }
+      }
+    }, { threshold: 0.25 });
+    io.observe(chart);
+    window.setTimeout(play, 3000);
+  }
+})();
+</script>
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('.shot-link'));
+  var box = document.getElementById('lightbox');
+  if (!links.length || !box || typeof box.showModal !== 'function') return;
+
+  var pic = document.getElementById('lb-img');
+  var cap = document.getElementById('lb-caption');
+  var num = document.getElementById('lb-count');
+  var current = 0;
+
+  function show(n) {
+    current = (n + links.length) % links.length;
+    var link = links[current];
+    var thumb = link.querySelector('img');
+    var title = link.closest('figure').querySelector('h3');
+
+    pic.src = link.getAttribute('href');
+    pic.alt = thumb ? thumb.alt : '';
+    if (title) cap.textContent = title.textContent;
+    num.textContent = (current + 1) + ' / ' + links.length;
+  }
+
+  links.forEach(function (link, n) {
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      show(n);
+      box.showModal();
+    });
+  });
+
+  box.querySelector('.lb-close').addEventListener('click', function () { box.close(); });
+  box.querySelector('.lb-prev').addEventListener('click', function () { show(current - 1); });
+  box.querySelector('.lb-next').addEventListener('click', function () { show(current + 1); });
+
+  box.addEventListener('click', function (event) {
+    if (event.target === box) box.close();
+  });
+
+  box.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowLeft') { event.preventDefault(); show(current - 1); }
+    if (event.key === 'ArrowRight') { event.preventDefault(); show(current + 1); }
+  });
+})();
+</script>
+</body>
+</html>

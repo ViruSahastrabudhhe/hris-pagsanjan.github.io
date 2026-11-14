@@ -3,77 +3,258 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0b1630">
-<title>PrimeHR Pagsanjan: web and mobile HRIS for Pagsanjan, Laguna</title>
-<meta name="description" content="PRIME-HRIS is the web and mobile Human Resource Information System of the Municipal Government of Pagsanjan, Laguna: employee 201 records, attendance, leave, payroll, travel orders, trainings, recruitment and an AI assistant.">
-<meta property="og:title" content="PrimeHR Pagsanjan">
-<meta property="og:description" content="Web and mobile HRIS for the Municipal Government of Pagsanjan, Laguna.">
+<meta name="theme-color" content="#ffffff">
+<title>HRIS Pagsanjan: web HRIS for Pagsanjan, Laguna</title>
+<meta name="description" content="HRIS is the web Human Resource Information System of the Municipal Government of Pagsanjan, Laguna: employee 201 records, attendance, leave, payroll, travel orders, trainings, recruitment and an AI assistant.">
+<meta property="og:title" content="HRIS Pagsanjan">
+<meta property="og:description" content="Web HRIS for the Municipal Government of Pagsanjan, Laguna.">
 <meta property="og:type" content="website">
 <link rel="icon" href="assets/img/pagsanjan-seal.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@900&display=swap">
 <style>
-:root{--bg:#0b1630;--bg2:#12214a;--card:#16264f;--text:#e8edf8;--muted:#9fb0d3;--accent:#5eb3ff;--accent2:#7ee0c3;--line:#26396b}
+:root{--bg:#fff;--bg2:#f3f6fc;--card:#fff;--text:#0a1f4d;--muted:#41527d;--faint:#8592b3;--accent:#0a1f4d;--line:#c7d0e4;--ink:#0a1f4d;--serif:'Playfair Display',Georgia,serif}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:70px}
-body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.65}
-a{color:var(--accent)}
-.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;background:#fff;color:#000;padding:8px;z-index:20}
-header{position:sticky;top:0;z-index:10;background:rgba(11,22,48,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;background-image:linear-gradient(rgba(10,31,77,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(10,31,77,.07) 1px,transparent 1px);background-size:48px 48px;-webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 25%,transparent 80%);mask-image:radial-gradient(ellipse at 50% 0%,#000 25%,transparent 80%)}
+a{color:var(--ink);text-decoration-thickness:2px;text-underline-offset:3px}
+.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;background:var(--ink);color:#fff;padding:8px;z-index:20}
+header{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:2px solid var(--ink)}
 nav{max-width:1080px;margin:auto;display:flex;align-items:center;gap:20px;padding:12px 20px;flex-wrap:wrap}
-nav .brand{font-weight:700;color:var(--text);text-decoration:none;font-size:1.1rem;margin-right:auto}
-nav a{color:var(--muted);text-decoration:none;font-size:.92rem}nav a:hover{color:var(--accent)}
+nav .brand{font-weight:900;color:var(--ink);text-decoration:none;font-size:1.15rem;letter-spacing:-.02em;margin-right:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+nav a:hover{color:var(--ink);text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
 main{max-width:1080px;margin:auto;padding:0 20px}
-section{padding:56px 0;border-bottom:1px solid var(--line)}
-.hero{padding:80px 0 56px}
-.seal{width:66px;height:66px;border-radius:50%;border:2px solid var(--line);background:#fff;padding:2px;margin-bottom:14px;display:block}
-.eyebrow{color:var(--accent2);font-size:.85rem;letter-spacing:.06em;text-transform:uppercase}
-h1{font-size:clamp(2.4rem,6vw,4rem);margin:.2em 0 .15em;line-height:1.1}
-h2{font-size:1.7rem;margin:0 0 .6em}h3{font-size:1.1rem;margin:1.2em 0 .3em}
-.sub{color:var(--muted);font-size:1.15rem;max-width:760px}
-.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
-.btn{display:inline-block;padding:11px 20px;border-radius:8px;text-decoration:none;font-weight:600;border:1px solid var(--accent)}
-.btn.primary{background:var(--accent);color:#06142c}.btn.ghost{color:var(--accent)}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:36px;padding:0;list-style:none}
-.stats li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-.stats strong{display:block;font-size:1.05rem;color:var(--accent2)}
-.stats span{color:var(--muted);font-size:.92rem}
-.note{background:var(--bg2);border-left:4px solid var(--accent);padding:14px 18px;border-radius:0 8px 8px 0;margin:1.4em 0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
-.card h3{margin-top:0}.card p{margin:0;color:var(--muted);font-size:.95rem}
-ol.steps{padding-left:1.2em}ol.steps li{margin:.5em 0}
-.shot{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;transition:border-color .15s}
-.shot:hover{border-color:var(--accent)}
-.shot img{display:block;width:100%;height:auto}
-.shot figcaption{padding:0 14px 12px}
-.shot figcaption h3{margin:.7em 0 .15em;font-size:1rem}
+section{padding:64px 0;border-bottom:1px solid var(--line)}
+.hero{padding:76px 0 60px}
+.seal{width:66px;height:66px;border-radius:50%;border:2px solid var(--ink);background:#fff;padding:2px;margin-bottom:18px;display:block}
+.eyebrow{color:var(--ink);font-size:.78rem;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin:0 0 12px}
+h1{font-size:clamp(2.6rem,6.4vw,4.6rem);font-weight:900;margin:.1em 0 .2em;line-height:1.04;letter-spacing:-.03em}
+h2{font-size:clamp(1.8rem,3.4vw,2.5rem);font-weight:900;line-height:1.1;letter-spacing:-.02em;margin:0 0 1em}
+h2::after{content:"";display:block;width:72px;height:4px;background:var(--ink);border-radius:2px;margin-top:14px}
+h3{font-size:1.1rem;font-weight:800;margin:1.6em 0 .4em;display:flex;align-items:center;gap:14px;letter-spacing:-.01em}
+section>h3::after{content:"";flex:1;height:1px;background:var(--line)}
+.sub{color:var(--muted);font-size:1.2rem;max-width:62ch}
+p{max-width:78ch}
+.btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+.btn{display:inline-block;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:800;border:2px solid var(--ink);transition:transform .15s,box-shadow .15s}
+.btn.primary{background:var(--ink);color:#fff;box-shadow:0 8px 24px rgba(10,31,77,.22)}.btn.ghost{color:var(--ink);background:#fff}
+.btn:hover{transform:translateY(-2px)}.btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:40px;padding:0;list-style:none}
+.stats li{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:20px 18px;display:flex;flex-direction:column;min-height:120px}
+.stats strong{display:block;font-size:1.3rem;font-weight:900;line-height:1.15;color:var(--ink);margin-bottom:8px}
+.stats span{color:var(--muted);font-size:.9rem;margin-top:auto}
+.note{background:var(--ink);color:#fff;border-radius:10px;padding:18px 22px;margin:1.6em 0;box-shadow:0 8px 24px rgba(10,31,77,.22)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:22px 24px}
+.card h3{margin-top:0;font-size:1.2rem;font-weight:900;display:block}.card h3::after{content:none}
+.card p{margin:0;color:var(--muted);font-size:.95rem}
+ol.steps{list-style:none;counter-reset:step;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;padding:0;margin:20px 0 28px}
+ol.steps li{counter-increment:step;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:18px;margin:0;font-size:.92rem;color:var(--muted);display:flex;flex-direction:column}
+ol.steps li::before{content:"STEP 0" counter(step);font-size:.65rem;font-weight:800;letter-spacing:.2em;color:var(--faint);margin-bottom:8px}
+ol.steps li strong{display:block;font-size:1.15rem;font-weight:900;color:var(--ink);line-height:1.15;margin-bottom:8px}
+ol.steps li:nth-child(3){background:var(--ink);color:rgba(255,255,255,.88);box-shadow:0 10px 32px rgba(10,31,77,.28)}
+ol.steps li:nth-child(3) strong{color:#fff}ol.steps li:nth-child(3)::before{color:rgba(255,255,255,.65)}
+.shot{margin:0;background:#fff;border:2px solid var(--ink);border-radius:12px;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.shot:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(10,31,77,.2)}
+.shot img{display:block;width:100%;height:auto;border-bottom:2px solid var(--ink)}
+.shot figcaption{padding:0 16px 14px}
+.shot figcaption h3{margin:.8em 0 .1em;font-size:1rem;font-weight:800;display:block}.shot figcaption h3::after{content:none}
 .shot-link{display:block;cursor:zoom-in;line-height:0}
-.shot-link:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.lightbox{position:fixed;margin:auto;width:auto;max-width:min(96vw,1400px);max-height:94vh;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--bg2);color:var(--text);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.shot-link:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+.lightbox{position:fixed;margin:auto;width:auto;max-width:min(96vw,1400px);max-height:94vh;padding:0;border:2px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink);overflow:hidden;box-shadow:0 24px 80px rgba(10,31,77,.45)}
 .lightbox[open]{display:flex;flex-direction:column}
-.lightbox::backdrop{background:rgba(4,10,24,.86);backdrop-filter:blur(4px)}
-.lightbox img{display:block;width:auto;height:auto;max-width:100%;max-height:calc(94vh - 58px);margin:auto;background:#0a1220}
-.lb-bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:1px solid var(--line);background:var(--card);font-size:.9rem;color:var(--muted)}
-.lb-bar strong{color:var(--text);font-weight:600;margin-right:auto}
-.lb-btn{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:1.15rem;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s,border-color .15s}
-.lb-btn:hover,.lb-btn:focus-visible{background:var(--accent);border-color:var(--accent);color:#06142c;outline:none}
-.lb-close{position:absolute;top:10px;right:10px;background:rgba(11,22,48,.85);backdrop-filter:blur(4px)}
-.lb-close:hover,.lb-close:focus-visible{background:var(--accent);border-color:var(--accent);color:#06142c}
+.lightbox::backdrop{background:rgba(10,31,77,.82);backdrop-filter:blur(4px)}
+.lightbox img{display:block;width:auto;height:auto;max-width:100%;max-height:calc(94vh - 58px);margin:auto;background:var(--bg2)}
+.lb-bar{display:flex;align-items:center;gap:12px;padding:9px 14px;border-top:2px solid var(--ink);background:#fff;font-size:.9rem;color:var(--muted)}
+.lb-bar strong{color:var(--ink);font-weight:800;margin-right:auto}
+.lb-btn{width:34px;height:34px;flex:none;border-radius:50%;border:2px solid var(--ink);background:#fff;color:var(--ink);font:inherit;font-size:1.15rem;line-height:1;cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s}
+.lb-btn:hover,.lb-btn:focus-visible{background:var(--ink);color:#fff;outline:none}
+.lb-close{position:absolute;top:10px;right:10px}
 @media (max-width:560px){.lightbox{max-width:96vw}.lb-bar{font-size:.82rem;padding:8px 10px}}
-.scroll{overflow-x:auto}
+.scroll{overflow-x:auto;border:2px solid var(--ink);border-radius:12px;background:#fff;margin:18px 0}
 table{border-collapse:collapse;width:100%;min-width:480px}
-th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}th{color:var(--accent2);font-size:.85rem;text-transform:uppercase}
-.links{list-style:none;padding:0;display:grid;gap:12px}
-.links a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;text-decoration:none;color:var(--text)}
-.links a:hover{border-color:var(--accent)}.links small{display:block;color:var(--muted)}
-footer{max-width:1080px;margin:auto;padding:36px 20px 60px;color:var(--muted);font-size:.92rem}
-footer small{display:block;margin-top:10px;font-size:.82rem}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line)}
+th{color:var(--ink);font-size:.7rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;border-bottom:2px solid var(--ink)}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+.links{list-style:none;padding:0;display:grid;gap:14px}
+.links a{display:block;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:18px 22px;text-decoration:none;color:var(--ink);transition:transform .2s,box-shadow .2s}
+.links a strong{font-size:1.1rem;font-weight:900}
+.links a:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(10,31,77,.18)}.links small{display:block;color:var(--muted);margin-top:2px}
+footer{max-width:1080px;margin:auto;padding:30px 20px 56px;color:var(--muted);font-size:.85rem;border-top:2px solid var(--ink)}
+footer strong{color:var(--ink);font-weight:900}
+footer small{display:block;margin-top:12px;font-size:.75rem;color:var(--faint)}
+
+/* Hero: evaluation chart (the one dark-blue block) */
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(300px,.94fr);gap:48px;align-items:center}
+.hero-copy{min-width:0}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:34px}}
+.hero-chart{position:relative;margin:0;padding:22px;border:2px solid var(--ink);border-radius:16px;background:var(--ink);color:#fff;box-shadow:0 18px 48px rgba(10,31,77,.32);overflow:hidden}
+.hero-chart::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:#fff;transform:scaleX(0);transform-origin:0 50%;transition:transform 1s cubic-bezier(.22,.61,.36,1)}
+.hero-chart.is-loaded::before{transform:scaleX(1)}
+.hc-head{display:flex;align-items:center;gap:16px}
+.hc-ring{position:relative;flex:none;width:92px;height:92px}
+.hc-ring svg{display:block;width:92px;height:92px;transform:rotate(-90deg)}
+.hc-ring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.hc-ring .track{stroke:rgba(255,255,255,.18)}
+.hc-ring .fill{stroke:#fff;stroke-dasharray:326.73;stroke-dashoffset:8.5;transition:stroke-dashoffset 1.5s cubic-bezier(.22,.61,.36,1)}
+.js .hero-chart:not(.is-loaded) .hc-ring .fill{stroke-dashoffset:326.73}
+.hc-ring-num{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-family:var(--serif);font-size:1.45rem;font-weight:900;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hc-ring-num small{display:block;margin-top:5px;font-family:'Inter',sans-serif;font-size:.54rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.hc-head-copy{min-width:0}
+.hc-kicker{margin:0 0 4px;color:rgba(255,255,255,.7);font-size:.62rem;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+.hc-title{margin:0;font-size:1rem;font-weight:800;line-height:1.3}
+.hc-sub{margin:4px 0 0;color:rgba(255,255,255,.75);font-size:.76rem;line-height:1.45}
+.hc-bars-title{margin:18px 0 8px;color:rgba(255,255,255,.7);font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.hc-bars{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.hc-bars li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name val" "track track";column-gap:10px;row-gap:4px}
+.hc-name{grid-area:name;color:rgba(255,255,255,.8);font-size:.75rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc-val{grid-area:val;font-size:.75rem;font-weight:700;line-height:1.3;font-variant-numeric:tabular-nums;min-width:2.8em;text-align:right}
+.hc-track{grid-area:track;position:relative;height:5px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+.hc-track::after{content:"";position:absolute;top:0;bottom:0;left:84.2%;width:1px;background:rgba(255,255,255,.6)}
+.hc-fill{display:block;height:100%;width:var(--w,0);border-radius:inherit;background:#fff}
+.js .hero-chart .hc-fill{width:0;transition:width 1.05s cubic-bezier(.22,.61,.36,1);transition-delay:calc(var(--i,0) * 75ms)}
+.js .hero-chart.is-loaded .hc-fill{width:var(--w,0)}
+.hc-bars li.is-total .hc-name{color:#fff;font-weight:800}
+.hc-foot{margin:16px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.75);font-size:.71rem;line-height:1.5}
+.hc-foot strong{color:#fff}
+@media (prefers-reduced-motion:reduce){.hero-chart::before,.js .hero-chart .hc-fill,.hc-ring .fill,.btn,.shot,.links a{transition:none}}
+
+/* Results */
+.overall{display:flex;gap:28px;align-items:center;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:16px;padding:26px 30px;box-shadow:0 18px 48px rgba(10,31,77,.28);margin:20px 0 18px}
+.overall .big{font-family:var(--serif);font-size:clamp(3.6rem,9vw,5.6rem);font-weight:900;line-height:.9;letter-spacing:-.04em}
+.overall .big small{font-family:'Inter',sans-serif;font-size:1rem;font-weight:600;letter-spacing:0;margin-left:6px;opacity:.7}
+.overall-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:18px;flex:1;min-width:260px;margin:0}
+.overall-meta div{border-left:2px solid rgba(255,255,255,.3);padding-left:14px}
+.overall-meta dt{font-size:.75rem;color:rgba(255,255,255,.75)}
+.overall-meta dd{margin:2px 0 0;font-size:1.3rem;font-weight:900;line-height:1.2}
+.crit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.crit{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:18px 20px}
+.crit-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.crit h4{margin:0;font-size:1rem;font-weight:800;line-height:1.25}
+.pill{flex:none;font-size:.62rem;font-weight:800;letter-spacing:.06em;white-space:nowrap;border:1.5px solid var(--ink);border-radius:99px;padding:2px 9px;background:var(--bg2)}
+.crit-score{display:flex;align-items:baseline;gap:10px;margin:12px 0 10px}
+.crit-score b{font-family:var(--serif);font-size:2.5rem;font-weight:900;line-height:1;letter-spacing:-.03em}
+.crit-score span{font-size:.82rem;color:var(--muted)}
+.meter{position:relative;height:8px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:var(--w);background:var(--ink);border-radius:inherit}
+.meter::after{content:"";position:absolute;top:0;bottom:0;left:84.2%;width:2px;background:#fff;box-shadow:0 0 0 1px var(--ink)}
+.scale-note{display:flex;justify-content:space-between;margin-top:5px;font-size:.66rem;color:var(--faint)}
+.legend-note{margin:14px 0 0;font-size:.85rem;color:var(--muted)}
+.bb{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:20px 0 16px}
+.bb-tile{border:2px solid var(--ink);border-radius:12px;padding:20px;background:#fff}
+.bb-tile b{display:block;font-family:var(--serif);font-size:3.2rem;font-weight:900;line-height:1;letter-spacing:-.03em}
+.bb-tile span{display:block;margin-top:6px;font-size:.85rem;color:var(--muted)}
+.bb-tile.win{background:var(--ink);color:#fff;box-shadow:0 14px 36px rgba(10,31,77,.28)}.bb-tile.win span{color:rgba(255,255,255,.78)}
+.passbar{display:flex;height:34px;border:2px solid var(--ink);border-radius:10px;overflow:hidden;font-size:.78rem;font-weight:800}
+.passbar span{display:flex;align-items:center;padding:0 14px;background:var(--ink);color:#fff;width:100%}
+.cover-label{margin:22px 0 10px;font-size:.7rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.cover{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cover li{display:flex;align-items:center;gap:12px;border:2px solid var(--ink);border-radius:12px;padding:14px 16px;background:#fff;font-weight:700;font-size:.95rem;line-height:1.3}
+.cover li::before{content:"\2713";flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:.9rem}
+.data-notes{margin-top:2em;padding:14px 18px;border:2px solid var(--ink);border-radius:12px;background:var(--bg2);font-size:.86rem;color:var(--muted)}
+.data-notes summary{cursor:pointer;color:var(--ink);font-weight:800}
+.data-notes ul{margin:.8em 0 0;padding-left:1.1em}
+.data-notes li{margin:.35em 0}
+
+/* Features: bento layout */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin:20px 0 8px}
+.bento .card{grid-column:span 2;display:flex;flex-direction:column;justify-content:flex-end;min-height:190px;padding:24px;transition:transform .2s,box-shadow .2s}
+.bento .card::before{content:"";width:28px;height:4px;border-radius:2px;background:var(--ink);margin-bottom:auto}
+.bento .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(10,31,77,.2)}
+.bento .card h3{margin:18px 0 8px;font-size:1.2rem}
+.bento .card:nth-child(1){grid-column:span 4;background:var(--ink);box-shadow:0 14px 36px rgba(10,31,77,.28)}
+.bento .card:nth-child(2){grid-column:span 2}
+.bento .card:nth-child(7){grid-column:span 4;background:var(--bg2)}
+.bento .card:nth-child(8),.bento .card:nth-child(9){grid-column:span 3}
+.bento .card:nth-child(8){background:var(--ink)}
+.bento .card:nth-child(1) h3,.bento .card:nth-child(8) h3{color:#fff;font-size:1.6rem;letter-spacing:-.02em}
+.bento .card:nth-child(1) p,.bento .card:nth-child(8) p{color:rgba(255,255,255,.82);font-size:1rem;max-width:56ch}
+.bento .card:nth-child(1)::before,.bento .card:nth-child(8)::before{background:#fff}
+.bento .card:nth-child(7) h3{font-size:1.45rem}
+@media (max-width:860px){.bento{grid-template-columns:repeat(2,1fr)}.bento .card,.bento .card:nth-child(n){grid-column:span 1;min-height:170px}.bento .card:nth-child(1),.bento .card:nth-child(7){grid-column:span 2}}
+@media (max-width:560px){.bento{grid-template-columns:1fr}.bento .card,.bento .card:nth-child(n){grid-column:auto}}
+@media (prefers-reduced-motion:reduce){.bento .card{transition:none}}
+
+/* Screenshots: browser frames */
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px;margin-top:20px}
+.shots .shot:first-child{grid-column:1/-1}
+.shots .shot{border-radius:14px;box-shadow:6px 6px 0 var(--ink)}
+.shots .shot:hover{transform:translate(-3px,-3px);box-shadow:9px 9px 0 var(--ink)}
+.shots .shot-link::before{content:"";display:block;height:32px;border-bottom:2px solid var(--ink);background:radial-gradient(circle 5px at 18px 16px,var(--ink) 98%,transparent) ,radial-gradient(circle 5px at 36px 16px,var(--line) 98%,transparent),radial-gradient(circle 5px at 54px 16px,var(--line) 98%,transparent),var(--bg2)}
+.shots .shot img{border-bottom:0}
+.shots .shot figcaption{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-top:2px solid var(--ink)}
+.shots .shot figcaption h3{margin:0;font-size:1rem}
+.shots .shot figcaption::after{content:"Click to enlarge";font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.shots .shot:first-child figcaption h3{font-size:1.25rem;font-weight:900}
+@media (max-width:760px){.shots{grid-template-columns:1fr}.shots .shot figcaption::after{content:"Tap to enlarge"}}
+@media (prefers-reduced-motion:reduce){.shots .shot,.shots .shot:hover{transition:none;transform:none}}
+
+/* Full-bleed tints and bands */
+#overview,#problems,#links{background:var(--bg2);box-shadow:0 0 0 100vmax var(--bg2);clip-path:inset(0 -100vmax)}
+#overview,#problems{padding:72px 0}
+footer{background:var(--ink);color:rgba(255,255,255,.78);box-shadow:0 0 0 100vmax var(--ink);clip-path:inset(0 -100vmax);border-top:0;padding-top:44px}
+footer strong{color:#fff;font-size:1.25rem;letter-spacing:-.02em}
+footer small{color:rgba(255,255,255,.55)}
+
+/* Hero stats strip */
+.stats{gap:0;border:2px solid var(--ink);border-radius:14px;overflow:hidden;background:#fff;box-shadow:6px 6px 0 var(--ink)}
+.stats li{border:0;border-right:2px solid var(--ink);border-radius:0;min-height:130px}
+.stats li:last-child{border-right:0}
+.stats li:first-child{background:var(--ink)}.stats li:first-child strong{color:#fff}.stats li:first-child span{color:rgba(255,255,255,.8)}
+.stats strong{font-family:var(--serif);font-size:1.55rem;letter-spacing:-.02em}
+@media (max-width:640px){.stats li{border-right:0;border-bottom:2px solid var(--ink)}.stats li:last-child{border-bottom:0}}
+
+/* Overview: lead paragraph and two columns */
+#overview{display:grid;grid-template-columns:1fr 1fr;column-gap:40px}
+#overview>h2,#overview>p:first-of-type,#overview>.note{grid-column:1/-1}
+#overview>p:first-of-type{font-size:clamp(1.25rem,2.4vw,1.65rem);line-height:1.45;font-weight:600;letter-spacing:-.02em;max-width:34em}
+#overview>p{max-width:none}
+@media (max-width:760px){#overview{grid-template-columns:1fr}}
+
+/* Team: people cards */
+#team .card{display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+#team .card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(10,31,77,.2)}
+#team .card::before{content:attr(data-i);display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--serif);font-weight:900;font-size:1.3rem;margin-bottom:16px}
+#team .card:nth-child(4){background:var(--ink)}
+#team .card:nth-child(4)::before{background:#fff;color:var(--ink)}
+#team .card:nth-child(4) h3{color:#fff}#team .card:nth-child(4) p{color:rgba(255,255,255,.82)}
+#team .card h3{font-size:1.15rem}
+#team>p:last-child{margin-top:26px;padding-left:18px;border-left:4px solid var(--ink);font-size:.92rem}
+
+/* Problem: pull quote and objective panel */
+#problems>h2+p{font-size:clamp(1.1rem,2vw,1.35rem);line-height:1.55;font-weight:600;letter-spacing:-.015em;padding-left:24px;border-left:6px solid var(--ink);max-width:46em}
+#problems h3{margin-top:2.2em}
+#problems h3+p{background:var(--ink);color:#fff;border-radius:14px;padding:26px 30px;font-size:1.08rem;line-height:1.6;max-width:none;box-shadow:0 14px 36px rgba(10,31,77,.25)}
+
+/* Methodology */
+#system>p:first-of-type{max-width:78ch;margin-top:6px}
+#system .grid .card{background:var(--bg2);border-left:8px solid var(--ink)}
+#system .grid .card h3{font-size:1.05rem}
+#system>h3:last-of-type+p{border:2px solid var(--ink);border-radius:12px;background:var(--bg2);padding:20px 24px;max-width:none;font-weight:500}
+
+/* Links: wide action rows */
+.links a{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 26px}
+.links a::after{content:"\2197";flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;border:2px solid var(--ink);font-size:1.2rem;font-weight:800;transition:background .2s,color .2s}
+.links a:hover::after{background:var(--ink);color:#fff}
+.links a span{display:block}
+.links li:first-child a{background:var(--ink);color:#fff}
+.links li:first-child a small{color:rgba(255,255,255,.8)}
+.links li:first-child a::after{border-color:#fff}
+.links li:first-child a:hover::after{background:#fff;color:var(--ink)}
+.links a strong{font-size:1.3rem;letter-spacing:-.02em}
+.links a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){#team .card,.links a::after{transition:none}}
 </style>
+<script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header>
 <nav aria-label="Primary">
-<a class="brand" href="#top">PrimeHR</a>
+<a class="brand" href="#top">HRIS</a>
 <a href="#overview">Overview</a>
 <a href="#team">Team</a>
 <a href="#problems">Problem</a>
@@ -86,37 +267,76 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 
 <main id="main">
 <section class="hero" id="top">
+<div class="hero-grid">
+<div class="hero-copy">
 <img class="seal" src="assets/img/pagsanjan-seal.jpg" alt="Seal of the Municipal Government of Pagsanjan" width="66" height="66">
-<p class="eyebrow">Human Resource Information System &middot; Municipality of Pagsanjan, Laguna</p>
-<h1>PrimeHR Pagsanjan</h1>
+<p class="eyebrow">Capstone Project &middot; Bachelor of Science in Information Technology &middot; Laguna State Polytechnic University</p>
+<h1>HRIS Pagsanjan</h1>
 <p class="sub">A web human resource information system for the Municipal Government of Pagsanjan, Laguna. One employee record connects the 201 file, daily time record, leave, travel orders, payroll, trainings and recruitment.</p>
 <div class="btns">
 <a class="btn primary" href="#screens">Explore the features</a>
 <a class="btn ghost" href="https://github.com/angieee0123/PrimeHrProject-Pagsanjan">View the repository</a>
 </div>
+</div>
+
+<figure class="hero-chart" id="heroChart" data-score="4.87">
+<div class="hc-head">
+<div class="hc-ring" aria-hidden="true">
+<svg viewBox="0 0 120 120" focusable="false">
+<defs><linearGradient id="hcRingGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffffff"></stop><stop offset="1" stop-color="#ffffff"></stop></linearGradient></defs>
+<circle class="track" cx="60" cy="60" r="52"></circle>
+<circle class="fill" cx="60" cy="60" r="52"></circle>
+</svg>
+<span class="hc-ring-num"><span data-count="4.87">4.87</span><small>of 5.00</small></span>
+</div>
+<div class="hc-head-copy">
+<p class="hc-kicker">System user evaluation</p>
+<p class="hc-title">Strongly Agree on every ISO/IEC 25010:2023 criterion</p>
+<p class="hc-sub">132 employee respondents &middot; overall evaluation 4.87</p>
+</div>
+</div>
+
+<p class="hc-bars-title">Total mean by criterion</p>
+<ul class="hc-bars">
+<li><span class="hc-name">Functional suitability</span><span class="hc-val" data-count="4.85">4.85</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97%;--i:0"></span></span></li>
+<li><span class="hc-name">Performance efficiency</span><span class="hc-val" data-count="4.84">4.84</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:96.8%;--i:1"></span></span></li>
+<li><span class="hc-name">Compatibility</span><span class="hc-val" data-count="4.84">4.84</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:96.8%;--i:2"></span></span></li>
+<li><span class="hc-name">Interaction capability</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:3"></span></span></li>
+<li><span class="hc-name">Reliability</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:4"></span></span></li>
+<li><span class="hc-name">Security</span><span class="hc-val" data-count="4.85">4.85</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97%;--i:5"></span></span></li>
+<li><span class="hc-name">Maintainability</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:6"></span></span></li>
+<li><span class="hc-name">Flexibility</span><span class="hc-val" data-count="4.86">4.86</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.2%;--i:7"></span></span></li>
+<li><span class="hc-name">Safety</span><span class="hc-val" data-count="4.84">4.84</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:96.8%;--i:8"></span></span></li>
+<li class="is-total"><span class="hc-name">Overall evaluation</span><span class="hc-val" data-count="4.87">4.87</span><span class="hc-track" aria-hidden="true"><span class="hc-fill" style="--w:97.4%;--i:9"></span></span></li>
+</ul>
+
+<p class="hc-foot">Tick marks 4.21, the Strongly Agree threshold. Black box testing: <strong>100%</strong> passing rate from 10 IT and system experts.</p>
+</figure>
+</div>
+
 <ul class="stats">
-<li><strong>Web application</strong><span>Laravel 13 and Blade for HR, admin and mayor</span></li>
-<li><strong>MySQL database</strong><span>One record shared by web</span></li>
+<li><strong>4.87 mean</strong><span>Overall weighted mean</span></li>
+<li><strong>132 respondents</strong><span>Evaluation respondents</span></li>
 <li><strong>4 user roles</strong><span>Employee, HR, admin and mayor</span></li>
 <li><strong>26 offices</strong><span>Municipal departments in the seeded roster</span></li>
 </ul>
 </section>
 
 <section id="overview">
-<h2>What PrimeHR does</h2>
+<h2>What HRIS does</h2>
 <p>Personnel records, daily time records, leave applications, travel orders and payroll inputs are usually spread across paper 201 files, spreadsheets and separate logs. Every request moves between offices by hand, and the same employee data is typed more than once.</p>
-<p>PRIME-HRIS brings these tasks into one system. HR and administrators work from a single employee record. The mayor gets a dashboard for approvals and oversight. The web application, mobile API and MySQL database all read and write the same data.</p>
+<p>HRIS brings these tasks into one system. HR and administrators work from a single employee record. The mayor gets a dashboard for approvals and oversight. The web application and MySQL database both read and write the same data.</p>
 <p>The system also includes an AI assistant that answers HR questions from the live database, and a recruitment module that parses r&eacute;sum&eacute;s, anonymises applicant data and produces a CSC-weighted, explainable shortlist.</p>
-<p class="note"><strong>Scope.</strong> PrimeHR supports HR operations but does not replace CSC, COA or legal review. Final hiring decisions remain with the Human Resources Management Office. The records used in the repository demo are synthetic test data, not real employees.</p>
+<p class="note"><strong>Scope.</strong> HRIS supports HR operations but does not replace CSC, COA or legal review. Final hiring decisions remain with the Human Resources Management Office. The records used in the repository demo are synthetic test data, not real employees.</p>
 </section>
 
 <section id="team">
 <h2>Research team and adviser</h2>
 <div class="grid">
-<div class="card"><h3>Borje, Princess Leriraine S.</h3><p>Researcher</p></div>
-<div class="card"><h3>Cuevas, Angelica D.</h3><p>Researcher</p></div>
-<div class="card"><h3>Demerin, Luke Jeremy O.</h3><p>Researcher</p></div>
-<div class="card"><h3>Villarica, Mia V., DIT</h3><p>Thesis adviser and Associate Dean, College of Computer Studies</p></div>
+<div class="card" data-i="PB"><h3>Borje, Princess Leriraine S.</h3><p>Researcher</p></div>
+<div class="card" data-i="AC"><h3>Cuevas, Angelica D.</h3><p>Researcher</p></div>
+<div class="card" data-i="LD"><h3>Demerin, Luke Jeremy O.</h3><p>Researcher</p></div>
+<div class="card" data-i="MV"><h3>Villarica, Mia V., DIT</h3><p>Thesis adviser and Associate Dean, College of Computer Studies</p></div>
 </div>
 <p style="color:var(--muted)">College of Computer Studies, Laguna State Polytechnic University, Santa Cruz Main Campus, Santa Cruz, Laguna. Submitted November 2026 in partial fulfillment of the Bachelor of Science in Information Technology. With thanks to the Human Resources Management Office (HRMO) of Pagsanjan.</p>
 </section>
@@ -147,13 +367,13 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
     <div class="card"><h3>Tooling</h3><p>PHPUnit, Cloudflared, and Composer/npm</p></div>
 </div>
 <h3>Evaluation</h3>
-<p>The system was assessed by 10 IT and system experts and 132 employees from the Municipality of Pagsanjan, Laguna.</p>
+<p>The developed HRIS underwent Black-Box Testing, where ten technical testers ran prepared test cases covering HR Personnel, Employee, and System Data Processing and Output functions, comparing actual results against expected ones and recording each as Pass/Fail to verify compliance with documented requirements. A System User Evaluation was then conducted using the validated System User Evaluation Questionnaire from Chapter III, with 10 IT and system experts and 132 employees from the Municipality of Pagsanjan, Laguna as respondents. Results were presented according to the respondents' demographic profile and their evaluation based on the selected ISO/IEC 25010:2023 software quality characteristics, summarized and interpreted using the weighted mean and corresponding verbal interpretation.</p>
 </section>
 
 <section id="screens">
 <h2>System features and screenshots</h2>
 <h3>Features</h3>
-<div class="grid" style="margin-top:20px">
+<div class="bento">
 <div class="card"><h3>Employee 201 records</h3><p>Profiles, addresses, contacts, family, education, eligibility, work experience, government IDs (GSIS, PhilHealth, Pag-IBIG, TIN), legal requirements, documents and photos.</p></div>
 <div class="card"><h3>Attendance and DTR</h3><p>Schedules, daily time records, QR kiosk punching, corrections, exemptions, late and undertime tracking, plus live accredited-hours and salary logs.</p></div>
 <div class="card"><h3>Leave and benefits</h3><p>Leave types, accrual rates, balances, CS Form 6 applications, approvals, leave calendar and leave monetisation requests.</p></div>
@@ -165,9 +385,9 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 <div class="card"><h3>Reports, exports and audit</h3><p>Personnel, payroll, leave-benefit, deduction, pass-slip and training exports, plus an audit trail of privileged actions.</p></div>
 </div>
 <h3>Screenshots</h3>
-<div class="grid">
-<figure class="shot"><a class="shot-link" href="assets/img/landing.png" aria-label="View full-size screenshot: Public homepage"><img src="assets/img/landing.png" alt="Public homepage of the PrimeHR Pagsanjan website" width="1920" height="922" loading="lazy"></a><figcaption><h3>Public homepage</h3></figcaption></figure>
-<figure class="shot"><a class="shot-link" href="assets/img/sign-in.png" aria-label="View full-size screenshot: Sign-in"><img src="assets/img/sign-in.png" alt="Sign-in screen of the PrimeHR Pagsanjan web application" width="1919" height="916" loading="lazy"></a><figcaption><h3>Sign-in</h3></figcaption></figure>
+<div class="shots">
+<figure class="shot"><a class="shot-link" href="assets/img/landing.png" aria-label="View full-size screenshot: Public homepage"><img src="assets/img/landing.png" alt="Public homepage of the HRIS Pagsanjan website" width="1920" height="922" loading="lazy"></a><figcaption><h3>Public homepage</h3></figcaption></figure>
+<figure class="shot"><a class="shot-link" href="assets/img/sign-in.png" aria-label="View full-size screenshot: Sign-in"><img src="assets/img/sign-in.png" alt="Sign-in screen of the HRIS Pagsanjan web application" width="1919" height="916" loading="lazy"></a><figcaption><h3>Sign-in</h3></figcaption></figure>
 <figure class="shot"><a class="shot-link" href="assets/img/admin-dashboard.png" aria-label="View full-size screenshot: Admin dashboard"><img src="assets/img/admin-dashboard.png" alt="Admin dashboard with HR summary cards and charts" width="1920" height="926" loading="lazy"></a><figcaption><h3>Admin dashboard</h3></figcaption></figure>
 <figure class="shot"><a class="shot-link" href="assets/img/employee-201.png" aria-label="View full-size screenshot: Employee 201 record"><img src="assets/img/employee-201.png" alt="Employee 201 record page with personnel information" width="1920" height="923" loading="lazy"></a><figcaption><h3>Employee 201 record</h3></figcaption></figure>
 <figure class="shot"><a class="shot-link" href="assets/img/dtr.png" aria-label="View full-size screenshot: DTR record"><img src="assets/img/dtr.png" alt="Daily time record page with attendance entries" width="1916" height="923" loading="lazy"></a><figcaption><h3>DTR record</h3></figcaption></figure>
@@ -177,31 +397,66 @@ footer small{display:block;margin-top:10px;font-size:.82rem}
 
 <section id="results">
 <h2>Results</h2>
-<h3>Findings from the final 132 respondents and 10 technical testers.</h3>
-<div class="scroll">
-<table>
-<thead><tr><th>Area</th><th>Measure</th><th>Result</th></tr></thead>
-<tbody>
-<tr><td>System User Evaluation</td><td>132 employees' responses based on the selected ISO/IEC 25010:2023 software quality characteristics.</td><td>4.87 mean</td></tr>
-<tr><td>Black Box Testing</td><td>10 IT and system experts testing HR Personnel, Employees, and System Data Processing and Output.</td><td>100% passing rate</td></tr>
-</tbody>
-</table>
+<h3>Statistical results</h3>
+<p>The System User Evaluation used a five-point scale, interpreted as <strong>Strongly Agree</strong> for a mean from 4.21 to 5.00. Each card reports the total mean of one ISO/IEC 25010:2023 criterion with its standard deviation (SD) and verbal interpretation.</p>
+<div class="overall">
+<div class="big">4.87<small>/ 5.00</small></div>
+<dl class="overall-meta">
+<div><dt>Overall evaluation</dt><dd>Strongly Agree</dd></div>
+<div><dt>Standard deviation</dt><dd>0.34</dd></div>
+<div><dt>Employee respondents</dt><dd>132</dd></div>
+</dl>
 </div>
-<p style="color:var(--muted)">Thesis evaluation scores for functionality, usability and acceptability are not stored in the repository.</p>
+<div class="crit-grid">
+<article class="crit"><div class="crit-top"><h4>Functional suitability</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.85</b><span>out of 5.00 &middot; SD 0.40</span></div><div class="meter" role="img" aria-label="Mean 4.85 out of 5"><i style="--w:97.0%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Performance efficiency</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.84</b><span>out of 5.00 &middot; SD 0.44</span></div><div class="meter" role="img" aria-label="Mean 4.84 out of 5"><i style="--w:96.8%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Compatibility</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.84</b><span>out of 5.00 &middot; SD 0.42</span></div><div class="meter" role="img" aria-label="Mean 4.84 out of 5"><i style="--w:96.8%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Interaction capability</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.86</b><span>out of 5.00 &middot; SD 0.36</span></div><div class="meter" role="img" aria-label="Mean 4.86 out of 5"><i style="--w:97.2%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Reliability</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.86</b><span>out of 5.00 &middot; SD 0.36</span></div><div class="meter" role="img" aria-label="Mean 4.86 out of 5"><i style="--w:97.2%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Security</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.85</b><span>out of 5.00 &middot; SD 0.41</span></div><div class="meter" role="img" aria-label="Mean 4.85 out of 5"><i style="--w:97.0%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Maintainability</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.86</b><span>out of 5.00 &middot; SD 0.45</span></div><div class="meter" role="img" aria-label="Mean 4.86 out of 5"><i style="--w:97.2%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Flexibility</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.86</b><span>out of 5.00 &middot; SD 0.34</span></div><div class="meter" role="img" aria-label="Mean 4.86 out of 5"><i style="--w:97.2%"></i></div></article>
+<article class="crit"><div class="crit-top"><h4>Safety</h4><span class="pill">Strongly Agree</span></div><div class="crit-score"><b>4.84</b><span>out of 5.00 &middot; SD 0.43</span></div><div class="meter" role="img" aria-label="Mean 4.84 out of 5"><i style="--w:96.8%"></i></div></article>
+</div>
+<p class="legend-note">Each bar runs from 0 to 5. The white tick marks 4.21, where Strongly Agree begins.</p>
+
+<h3>Black box testing</h3>
+<p>Ten (10) IT and system experts performed black box testing on the developed HRIS to determine whether the tested functions operated according to their documented requirements and expected behavior. The prepared test cases covered the functions for HR Personnel, Employees, and System Data Processing and Output. Each actual result was compared with the documented expected result and recorded as either Pass or Fail; no failures were recorded.</p>
+<div class="bb">
+<div class="bb-tile"><b>10</b><span>IT and system experts as testers</span></div>
+<div class="bb-tile"><b>0</b><span>Failed test cases</span></div>
+<div class="bb-tile win"><b>100%</b><span>Passing rate overall</span></div>
+</div>
+<div class="passbar" role="img" aria-label="100 percent of tests passed, 0 percent failed"><span>100% Pass</span></div>
+<p class="cover-label">Functions covered</p>
+<ul class="cover">
+<li>HR Personnel</li>
+<li>Employees</li>
+<li>System Data Processing and Output</li>
+</ul>
+
+<details class="data-notes">
+<summary>Notes on the source tables</summary>
+<ul>
+<li>Performance efficiency: the manuscript's discussion also refers to an Item 6 (AI chatbot response time, mean 4.87) that is not among the supplied indicators.</li>
+<li>Maintainability: the supplied table gives a total of 4.86 with a standard deviation of 0.45, while the manuscript states 0.34.</li>
+<li>Flexibility: the supplied table had overlapping columns. The total shown (4.86, SD 0.34) follows the manuscript.</li>
+</ul>
+</details>
 </section>
 
 <section id="links" style="border-bottom:0">
 <h2>Links</h2>
 <ul class="links">
-    <li><a href="https://pusongpagsanjan.com/"><strong>Live system</strong><small>The Pagsanjan HRIS web application, opens at the landing page</small></a></li>
-    <li><a href="https://github.com/angieee0123/PrimeHrProject-Pagsanjan"><strong>Source repository</strong><small>Laravel web app and database setup</small></a></li>
-    <li><a href="https://drive.google.com/file/d/1ebse1FPXMYqsl2ABpv5OIQ5P5eHulPQt/view?usp=drive_link"><strong>Video demo</strong><small>A recorded video showcasing the features and capabilities of Pagsanjan HRIS in a shared Google Drive folder</small></a></li>
+    <li><a href="https://pusongpagsanjan.com/"><span><strong>Live system</strong><small>The Pagsanjan HRIS web application, opens at the landing page</small></span></a></li>
+    <li><a href="https://github.com/angieee0123/PrimeHrProject-Pagsanjan"><span><strong>Source repository</strong><small>Laravel web app and database setup</small></span></a></li>
+    <li><a href="https://drive.google.com/file/d/1ebse1FPXMYqsl2ABpv5OIQ5P5eHulPQt/view?usp=drive_link"><span><strong>Video demo</strong><small>A recorded video showcasing the features and capabilities of Pagsanjan HRIS in a shared Google Drive folder</small></span></a></li>
 </ul>
 </section>
 </main>
 
 <footer>
-<strong>PrimeHR Pagsanjan</strong><br>
+<strong>HRIS Pagsanjan</strong><br>
 Municipal Government of Pagsanjan, Laguna &middot; Poblacion, Pagsanjan, Laguna 4008<br>
 Built for the Human Resources Management Office (HRMO), Pagsanjan, Laguna.
 <small>Demo records are synthetic. The municipal seal is the property of the Municipal Government of Pagsanjan.</small>
@@ -218,6 +473,67 @@ Built for the Human Resources Management Office (HRMO), Pagsanjan, Laguna.
 </div>
 </dialog>
 
+<script>
+(function () {
+  var chart = document.getElementById('heroChart');
+  if (!chart) return;
+
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var counters = chart.querySelectorAll('[data-count]');
+  var ring = chart.querySelector('.hc-ring .fill');
+  var circumference = 2 * Math.PI * 52;
+  var score = parseFloat(chart.getAttribute('data-score') || '4.87');
+  var played = false;
+
+  function animateNumber(el, target, duration) {
+    var start = null;
+    function frame(now) {
+      if (start === null) start = now;
+      var progress = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = (target * eased).toFixed(2);
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function finalState() {
+    for (var i = 0; i < counters.length; i++) {
+      counters[i].textContent = parseFloat(counters[i].getAttribute('data-count')).toFixed(2);
+    }
+    if (ring) ring.style.strokeDashoffset = String(circumference * (1 - score / 5));
+  }
+
+  function play() {
+    if (played) return;
+    played = true;
+    chart.classList.add('is-loaded');
+
+    if (reduce) return finalState();
+
+    if (ring) ring.style.strokeDashoffset = String(circumference * (1 - score / 5));
+    for (var i = 0; i < counters.length; i++) {
+      animateNumber(counters[i], parseFloat(counters[i].getAttribute('data-count')), 1200);
+    }
+  }
+
+  if (!reduce) {
+    for (var z = 0; z < counters.length; z++) counters[z].textContent = '0.00';
+  }
+
+  if (reduce || !('IntersectionObserver' in window)) {
+    play();
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      for (var e = 0; e < entries.length; e++) {
+        if (entries[e].isIntersecting) { play(); io.disconnect(); }
+      }
+    }, { threshold: 0.25 });
+    io.observe(chart);
+    window.setTimeout(play, 3000);
+  }
+})();
+</script>
 <script>
 (function () {
   var links = Array.prototype.slice.call(document.querySelectorAll('.shot-link'));
